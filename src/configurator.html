@@ -76,45 +76,53 @@
             border-color: rgba(167, 59, 36, 0.6);
         }
         
-        /* Hotspot preview styles */
+        /* Hotspot preview styles - STABLE AND VISIBLE */
         .hotspot-preview,
         .pnlm-hotspot.hotspot-preview,
         .pnlm-hotspot-base.hotspot-preview {
             background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
-            border: 2px solid white !important;
+            border: 3px solid white !important;
             border-radius: 50% !important;
-            width: 20px !important;
-            height: 20px !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+            width: 24px !important;
+            height: 24px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
             cursor: pointer !important;
-            transition: all 0.2s ease !important;
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            z-index: 1000 !important;
+            z-index: 10000 !important;
+            position: absolute !important;
+            /* Make it stable - no wiggling */
+            transform: translate(-50%, -50%) !important;
+            transition: transform 0.2s ease !important;
+            pointer-events: auto !important;
         }
         
-        /* Pannellum default hotspot styling */
+        /* Pannellum default hotspot styling - STABLE */
         .pnlm-hotspot {
-            height: 26px !important;
-            width: 26px !important;
+            height: 24px !important;
+            width: 24px !important;
             background: #3b82f6 !important;
-            border: 2px solid #fff !important;
+            border: 3px solid #fff !important;
             border-radius: 50% !important;
             cursor: pointer !important;
             display: block !important;
             visibility: visible !important;
+            position: absolute !important;
+            transform: translate(-50%, -50%) !important;
+            pointer-events: auto !important;
         }
         
         .pnlm-hotspot:hover {
             background: #ef4444 !important;
+            transform: translate(-50%, -50%) scale(1.3) !important;
         }
         
         .hotspot-preview:hover,
         .pnlm-hotspot.hotspot-preview:hover,
         .pnlm-hotspot-base.hotspot-preview:hover {
             background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-            transform: scale(1.2) !important;
+            transform: translate(-50%, -50%) scale(1.3) !important;
         }
         
         .custom-hotspot {
@@ -706,6 +714,7 @@
 
         /**
          * Draw the floor plan image and all scene markers on the canvas
+         * FIXED: Now maintains aspect ratio and fits image properly
          */
         function drawFloorPlan() {
             const ctx = appState.ctx;
@@ -723,11 +732,37 @@
             // Draw the floor plan image if available
             if (appState.floorPlanImage) {
                 const canvasRect = canvas.getBoundingClientRect();
+                const imgWidth = appState.floorPlanImage.width;
+                const imgHeight = appState.floorPlanImage.height;
+                
+                // Calculate aspect ratios
+                const canvasAspect = canvasRect.width / canvasRect.height;
+                const imgAspect = imgWidth / imgHeight;
+                
+                let drawWidth, drawHeight, offsetX, offsetY;
+                
+                // Fit image to canvas while maintaining aspect ratio
+                if (imgAspect > canvasAspect) {
+                    // Image is wider - fit to width
+                    drawWidth = canvasRect.width;
+                    drawHeight = canvasRect.width / imgAspect;
+                    offsetX = 0;
+                    offsetY = (canvasRect.height - drawHeight) / 2;
+                } else {
+                    // Image is taller - fit to height
+                    drawHeight = canvasRect.height;
+                    drawWidth = canvasRect.height * imgAspect;
+                    offsetX = (canvasRect.width - drawWidth) / 2;
+                    offsetY = 0;
+                }
+                
+                // Draw with proper aspect ratio and centering
                 ctx.drawImage(
                     appState.floorPlanImage, 
-                    0, 0, 
-                    canvasRect.width, 
-                    canvasRect.height
+                    offsetX, 
+                    offsetY, 
+                    drawWidth, 
+                    drawHeight
                 );
             }
             
