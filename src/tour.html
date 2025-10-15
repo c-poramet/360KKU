@@ -189,13 +189,22 @@
                 const { x, y } = scene.map;
 
                 const targetZoom = 3;
-
-                // Animate pan and zoom to center the point
-                minimap.pan({
-                    x: -x * (targetZoom / 2), // Adjust pan based on zoom
-                    y: -y * (targetZoom / 2)
-                });
+                
+                // Set the zoom level first
                 minimap.zoom(targetZoom);
+                
+                // Get the sizes after zooming
+                const sizes = minimap.getSizes();
+                const viewportWidth = sizes.width;
+                const viewportHeight = sizes.height;
+                const realZoom = sizes.realZoom;
+                
+                // Calculate the pan needed to center the point
+                // We want the point (x, y) to be at the center of the viewport
+                const panX = (viewportWidth / 2) - (x * realZoom);
+                const panY = (viewportHeight / 2) - (y * realZoom);
+                
+                minimap.pan({ x: panX, y: panY });
             }
 
             loadTour();
