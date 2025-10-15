@@ -417,6 +417,61 @@
         </div>
     </dialog>
 
+    <!-- Hotspot Modal -->
+    <dialog id="hotspot-modal" class="backdrop:bg-black backdrop:bg-opacity-75">
+        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md mx-auto shadow-2xl border border-gray-600">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-white">Add Navigation Hotspot</h2>
+                <button id="close-hotspot-modal" class="text-gray-400 hover:text-white text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="hotspot-form">
+                <!-- Destination Scene Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Destination Scene</label>
+                    <select id="hotspot-destination" required 
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select destination scene...</option>
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Where users will go when clicking this hotspot</p>
+                </div>
+                
+                <!-- Hotspot Text -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Hotspot Text</label>
+                    <input type="text" id="hotspot-text" required 
+                           class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="e.g., Go to Main Lobby, Enter Computer Lab">
+                    <p class="text-xs text-gray-400 mt-1">Text shown when users hover over the hotspot</p>
+                </div>
+                
+                <!-- Coordinates Display -->
+                <div class="mb-4 p-3 bg-gray-900 rounded-lg">
+                    <p class="text-xs text-gray-400 mb-1">Coordinates</p>
+                    <p class="text-sm text-blue-300">
+                        Pitch: <span id="hotspot-pitch">0</span>° | 
+                        Yaw: <span id="hotspot-yaw">0</span>°
+                    </p>
+                </div>
+                
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-700">
+                    <button type="button" id="cancel-hotspot" 
+                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add Hotspot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
     <script>
         // ===========================
         // GLOBAL STATE MANAGEMENT
@@ -447,7 +502,8 @@
             ctx: null,                   // Canvas 2D context
             floorPlanImage: null,        // Uploaded floor plan image
             sceneMarkers: [],            // Visual markers on the canvas
-            clickCoordinates: null       // Coordinates where user clicked to add scene
+            clickCoordinates: null,      // Coordinates where user clicked to add scene
+            pendingHotspotCoords: null   // Coordinates for hotspot being added
         };
 
         // ===========================
@@ -497,6 +553,9 @@
             
             // Scene modal management
             setupSceneModal();
+            
+            // Hotspot modal management
+            setupHotspotModal();
             
             // Hotspot mode toggle
             const hotspotBtn = document.getElementById('add-hotspot-mode');
@@ -721,6 +780,30 @@
             
             // File upload for panorama preview
             setupPanoramaUpload();
+        }
+
+        /**
+         * Set up the hotspot modal and its event handlers
+         */
+        function setupHotspotModal() {
+            const modal = document.getElementById('hotspot-modal');
+            const form = document.getElementById('hotspot-form');
+            const closeBtn = document.getElementById('close-hotspot-modal');
+            const cancelBtn = document.getElementById('cancel-hotspot');
+            
+            // Close modal handlers
+            closeBtn.addEventListener('click', closeHotspotModal);
+            cancelBtn.addEventListener('click', closeHotspotModal);
+            
+            // Form submission
+            form.addEventListener('submit', handleHotspotFormSubmit);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeHotspotModal();
+                }
+            });
         }
 
         /**
@@ -1214,7 +1297,7 @@
          */
         function handleHotspotClick(coords) {
             if (!appState.currentSceneId) {
-                alert('No scene selected!');
+                showMessage('No scene selected!', 'error');
                 return;
             }
             
@@ -1223,45 +1306,112 @@
                 .filter(id => id !== appState.currentSceneId);
             
             if (availableScenes.length === 0) {
-                alert('No destination scenes available! Create more scenes first.');
+                showMessage('No destination scenes available! Create more scenes first.', 'warning');
                 return;
             }
             
-            // Create selection prompt
-            const sceneOptions = availableScenes.map((sceneId, index) => 
-                `${index + 1}. ${sceneId} - ${tourData.scenes[sceneId].title}`
-            ).join('\\n');
+            // Store coordinates for later use
+            appState.pendingHotspotCoords = coords;
             
-            const selection = prompt(
-                `Select destination scene for this hotspot:\\n\\n${sceneOptions}\\n\\nEnter the scene ID:`
-            );
+            // Open hotspot modal
+            openHotspotModal(availableScenes);
+        }
+
+        /**
+         * Open the hotspot modal with available destination scenes
+         */
+        function openHotspotModal(availableScenes) {
+            const modal = document.getElementById('hotspot-modal');
+            const destinationSelect = document.getElementById('hotspot-destination');
+            const pitchSpan = document.getElementById('hotspot-pitch');
+            const yawSpan = document.getElementById('hotspot-yaw');
+            const textInput = document.getElementById('hotspot-text');
             
-            if (!selection || !tourData.scenes[selection]) {
-                alert('Invalid scene ID! Please enter an exact scene ID from the list.');
+            // Populate destination scene dropdown
+            destinationSelect.innerHTML = '<option value="">Select destination scene...</option>';
+            availableScenes.forEach(sceneId => {
+                const scene = tourData.scenes[sceneId];
+                const option = document.createElement('option');
+                option.value = sceneId;
+                option.textContent = `${scene.title} (${sceneId})`;
+                destinationSelect.appendChild(option);
+            });
+            
+            // Display coordinates
+            const coords = appState.pendingHotspotCoords;
+            pitchSpan.textContent = coords.pitch.toFixed(1);
+            yawSpan.textContent = coords.yaw.toFixed(1);
+            
+            // Clear previous text
+            textInput.value = '';
+            
+            // Auto-suggest text when destination changes
+            destinationSelect.addEventListener('change', function() {
+                if (this.value) {
+                    const selectedScene = tourData.scenes[this.value];
+                    textInput.value = `Go to ${selectedScene.title}`;
+                }
+            });
+            
+            modal.showModal();
+        }
+
+        /**
+         * Close the hotspot modal and clean up
+         */
+        function closeHotspotModal() {
+            const modal = document.getElementById('hotspot-modal');
+            modal.close();
+            
+            // Clear pending coordinates
+            appState.pendingHotspotCoords = null;
+            
+            // Reset form
+            document.getElementById('hotspot-form').reset();
+            
+            // Fix mouse sticking issue - exit hotspot mode after adding
+            if (appState.hotspotMode) {
+                toggleHotspotMode();
+                showMessage('Hotspot mode disabled. Click "Add Hotspots" to add more.', 'info');
+            }
+        }
+
+        /**
+         * Handle hotspot form submission
+         */
+        function handleHotspotFormSubmit(event) {
+            event.preventDefault();
+            
+            const destinationSceneId = document.getElementById('hotspot-destination').value;
+            const hotspotText = document.getElementById('hotspot-text').value.trim();
+            
+            if (!destinationSceneId || !hotspotText) {
+                showMessage('Please fill in all fields', 'error');
                 return;
             }
             
-            const hotspotText = prompt('Enter hotspot text (what users will see):', 
-                `Go to ${tourData.scenes[selection].title}`);
+            const coords = appState.pendingHotspotCoords;
             
-            if (!hotspotText) return;
-            
-            // Add hotspot to current scene
+            // Create hotspot object
             const hotspot = {
                 "pitch": parseFloat(coords.pitch.toFixed(1)),
                 "yaw": parseFloat(coords.yaw.toFixed(1)),
                 "type": "scene",
                 "text": hotspotText,
-                "sceneId": selection
+                "sceneId": destinationSceneId
             };
             
+            // Add to current scene
             tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
             
             // Update UI
             updateAllUI();
             
-            showMessage(`Added hotspot: "${hotspotText}" -> ${selection}`, 'success');
-            console.log(`Added hotspot: ${hotspotText} -> ${selection} at pitch:${coords.pitch.toFixed(1)}, yaw:${coords.yaw.toFixed(1)}`);
+            // Close modal
+            closeHotspotModal();
+            
+            showMessage(`Added hotspot: "${hotspotText}" -> ${tourData.scenes[destinationSceneId].title}`, 'success');
+            console.log(`Added hotspot: ${hotspotText} -> ${destinationSceneId} at pitch:${coords.pitch.toFixed(1)}, yaw:${coords.yaw.toFixed(1)}`);
         }
 
         /**
@@ -1904,6 +2054,8 @@
         window.loadSceneInViewer = loadSceneInViewer;
         window.showImagePathHelper = showImagePathHelper;
         window.openSceneModal = openSceneModal;
+        window.openHotspotModal = openHotspotModal;
+        window.closeHotspotModal = closeHotspotModal;
         window.updateFirstScene = updateFirstScene;
         window.updateFadeDuration = updateFadeDuration;
         window.exportConfiguration = exportConfiguration;
