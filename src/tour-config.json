@@ -1,0 +1,43 @@
+{
+  "default": {
+    "firstScene": "",
+    "sceneFadeDuration": 1000,
+    "autoLoad": true
+  },
+  "scenes": {
+    "lcorr1": {
+      "title": "Left Corridor 1",
+      "panorama": "images/floor1/left-corr-1.jpg",
+      "map": {
+        "x": 67,
+        "y": 153
+      },
+      "hotSpots": [
+        {
+          "pitch": -22.1,
+          "yaw": 101.5,
+          "type": "scene",
+          "text": "Go to Left Corridor 2",
+          "sceneId": "lcorr2"
+        }
+      ]
+    },
+    "lcorr2": {
+      "title": "Left Corridor 2",
+      "panorama": "images/floor1/left-corr-2.jpg",
+      "map": {
+        "x": 107,
+        "y": 154
+      },
+      "hotSpots": [
+        {
+          "pitch": -18.7,
+          "yaw": -63.9,
+          "type": "scene",
+          "text": "Go to Left Corridor 1",
+          "sceneId": "lcorr1"
+        }
+      ]
+    }
+  }
+}
