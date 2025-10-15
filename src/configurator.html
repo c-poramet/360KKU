@@ -757,6 +757,9 @@
                 // Clear form
                 document.getElementById('scene-form').reset();
                 document.getElementById('scene-id').disabled = false;
+                
+                // Reset panorama uploader
+                resetPanoramaUploader();
             }
             
             modal.showModal();
@@ -772,6 +775,9 @@
             appState.editingSceneId = null;
             appState.clickCoordinates = null;
             document.getElementById('scene-form').reset();
+            
+            // Reset panorama uploader
+            resetPanoramaUploader();
         }
 
         /**
@@ -920,6 +926,41 @@
                 console.log('Panorama preview image loaded, deployment path:', deploymentPath);
             };
             reader.readAsDataURL(file);
+        }
+
+        /**
+         * Reset the panorama uploader to its default state
+         */
+        function resetPanoramaUploader() {
+            // Clear the file input
+            const fileInput = document.getElementById('panorama-file');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            
+            // Reset the drop zone to its original state
+            const dropZone = document.getElementById('panorama-drop-zone');
+            if (dropZone) {
+                dropZone.innerHTML = `
+                    <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                    <p class="text-gray-300 mb-1">Drop 360° image here or click to browse</p>
+                    <input type="file" id="panorama-file" accept="image/*" class="hidden">
+                    <button type="button" onclick="document.getElementById('panorama-file').click()" 
+                            class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
+                        Select Image
+                    </button>
+                `;
+                
+                // Re-attach event listeners since we replaced the HTML
+                setupPanoramaUpload();
+            }
+            
+            // Clear the panorama path field
+            const panoramaPath = document.getElementById('panorama-path');
+            if (panoramaPath) {
+                panoramaPath.value = '';
+                panoramaPath.placeholder = 'Auto-generated based on filename...';
+            }
         }
 
         /**
