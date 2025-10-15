@@ -6,6 +6,7 @@
     <title>360° Virtual Tour</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -24,8 +25,8 @@
             position: absolute;
             bottom: 20px;
             left: 20px;
-            width: 250px;
-            height: auto;
+            width: 250px; /* Changed */
+            height: 250px; /* Changed */
             border: 2px solid rgba(255, 255, 255, 0.7);
             border-radius: 8px;
             background: rgba(0, 0, 0, 0.6);
@@ -38,20 +39,17 @@
             height: 100%;
             position: relative;
         }
+        /* The markers are now inside the SVG, so we style them for SVG */
         .scene-marker {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background-color: #ff4500;
-            border-radius: 50%;
-            border: 2px solid white;
-            transform: translate(-50%, -50%);
+            fill: #ff4500;
+            stroke: white;
+            stroke-width: 2px;
             transition: all 0.2s ease;
             cursor: pointer;
         }
         .scene-marker.active {
-            background-color: #00ff7f;
-            transform: translate(-50%, -50%) scale(1.3);
+            fill: #00ff7f;
+            r: 8px; /* Make active marker bigger */
         }
         .pnlm-hotspot {
             width: 30px !important;
@@ -79,6 +77,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             let viewer;
             let tourConfig;
+            let minimap; // To hold the svg-pan-zoom instance
             let currentFloor = 'floor1'; // Default floor
 
             async function loadTour() {
@@ -114,6 +113,7 @@
                 viewer.on('load', () => {
                     const currentSceneId = viewer.getScene();
                     updateActiveMarker(currentSceneId);
+                    centerMinimapOnScene(currentSceneId);
                 });
             }
 
@@ -124,31 +124,50 @@
                     if (!response.ok) throw new Error('Floorplan not found');
                     const svgData = await response.text();
                     floorplanContainer.innerHTML = svgData;
-                    createMarkers(floor);
+                    
+                    const svgElement = floorplanContainer.querySelector('svg');
+                    if (svgElement) {
+                        createMarkers(floor, svgElement);
+                        
+                        minimap = svgPanZoom(svgElement, {
+                            zoomEnabled: true,
+                            panEnabled: true,
+                            controlIconsEnabled: false,
+                            dblClickZoomEnabled: false,
+                            fit: true,
+                            center: true,
+                            minZoom: 0.7,
+                            maxZoom: 10
+                        });
+
+                        // Center on initial scene after setup
+                        centerMinimapOnScene(viewer.getScene());
+                    }
                 } catch (error) {
                     console.warn(`Could not load floor plan for ${floor}:`, error);
                     floorplanContainer.innerHTML = '<p style="color:white;padding:10px;">Floor plan not available.</p>';
                 }
             }
 
-            function createMarkers(floor) {
-                const floorplanSvg = document.getElementById('floorplan-svg');
+            function createMarkers(floor, svgElement) {
+                // Clear existing markers if any (to prevent duplicates on reload)
+                svgElement.querySelectorAll('.scene-marker').forEach(marker => marker.remove());
 
                 Object.keys(tourConfig.scenes).forEach(sceneId => {
                     const scene = tourConfig.scenes[sceneId];
                     if (scene.panorama && scene.panorama.includes(`/${floor}/`)) {
                         if (scene.map && scene.map.x && scene.map.y) {
-                            const marker = document.createElement('div');
-                            marker.className = 'scene-marker';
-                            marker.id = `marker-${sceneId}`;
-                            marker.style.left = `${scene.map.x}px`;
-                            marker.style.top = `${scene.map.y}px`;
-                            marker.addEventListener('click', () => viewer.loadScene(sceneId));
-                            floorplanSvg.appendChild(marker);
+                            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                            circle.setAttribute('class', 'scene-marker');
+                            circle.setAttribute('id', `marker-${sceneId}`);
+                            circle.setAttribute('cx', scene.map.x);
+                            circle.setAttribute('cy', scene.map.y);
+                            circle.setAttribute('r', 6);
+                            circle.addEventListener('click', () => viewer.loadScene(sceneId));
+                            svgElement.appendChild(circle);
                         }
                     }
                 });
-                updateActiveMarker(viewer.getScene());
             }
 
             function updateActiveMarker(sceneId) {
@@ -159,6 +178,23 @@
                 if (activeMarker) {
                     activeMarker.classList.add('active');
                 }
+            }
+
+            function centerMinimapOnScene(sceneId) {
+                if (!minimap || !tourConfig.scenes[sceneId] || !tourConfig.scenes[sceneId].map) {
+                    return;
+                }
+
+                const scene = tourConfig.scenes[sceneId];
+                const { x, y } = scene.map;
+
+                // Zoom in and pan to the desired coordinates
+                minimap.zoom(3); // Zoom in to a fixed level
+                const newSizes = minimap.getSizes();
+                const panX = (newSizes.width / 2) - (x * newSizes.realZoom);
+                const panY = (newSizes.height / 2) - (y * newSizes.realZoom);
+                
+                minimap.pan({ x: panX, y: panY });
             }
 
             loadTour();
