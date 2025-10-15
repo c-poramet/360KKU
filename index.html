@@ -6,6 +6,107 @@
     <title>KKU 360° Virtual Tour - Poramet Chomphoochit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom animations for feature cards */
+        .feature-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg) translate(-100%, -100%);
+            transition: transform 0.6s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.4),
+                0 0 0 1px rgba(255,255,255,0.1),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        
+        .feature-card:hover::before {
+            transform: rotate(45deg) translate(100%, 100%);
+        }
+        
+        /* Glow effects for specific cards */
+        .blue-glow:hover {
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.4),
+                0 0 20px rgba(59, 130, 246, 0.4),
+                0 0 40px rgba(59, 130, 246, 0.2),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        
+        .green-glow:hover {
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.4),
+                0 0 20px rgba(34, 197, 94, 0.4),
+                0 0 40px rgba(34, 197, 94, 0.2),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+        
+        .purple-glow:hover {
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.4),
+                0 0 20px rgba(168, 85, 247, 0.4),
+                0 0 40px rgba(168, 85, 247, 0.2),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            border-color: rgba(168, 85, 247, 0.5);
+        }
+        
+        /* Icon animations */
+        .feature-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover .feature-icon {
+            transform: scale(1.2) rotate(5deg);
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+        
+        /* Pulsing animation for icons */
+        @keyframes pulse-glow {
+            0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+        
+        .feature-card:hover .feature-icon {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        /* Text animations */
+        .feature-card .feature-title,
+        .feature-card .feature-text {
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover .feature-title {
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        
+        .feature-card:hover .feature-text {
+            color: #e2e8f0;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 min-h-screen">
     <!-- Navigation -->
@@ -37,26 +138,26 @@
 
             <!-- Features Grid -->
             <div class="grid md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                    <div class="text-4xl text-blue-400 mb-4">
+                <div class="feature-card blue-glow bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 cursor-pointer">
+                    <div class="feature-icon text-4xl text-blue-400 mb-4">
                         <i class="fas fa-street-view"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-white mb-2">Street View Style</h3>
-                    <p class="text-gray-300">Navigate with intuitive hotspots and smooth transitions between spaces</p>
+                    <h3 class="feature-title text-xl font-semibold text-white mb-2">Street View Style</h3>
+                    <p class="feature-text text-gray-300">Navigate with intuitive hotspots and smooth transitions between spaces</p>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                    <div class="text-4xl text-green-400 mb-4">
+                <div class="feature-card green-glow bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 cursor-pointer">
+                    <div class="feature-icon text-4xl text-green-400 mb-4">
                         <i class="fas fa-map"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-white mb-2">Interactive Map</h3>
-                    <p class="text-gray-300">Real-time minimap shows your location and viewing direction</p>
+                    <h3 class="feature-title text-xl font-semibold text-white mb-2">Interactive Map</h3>
+                    <p class="feature-text text-gray-300">Real-time minimap shows your location and viewing direction</p>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                    <div class="text-4xl text-purple-400 mb-4">
+                <div class="feature-card purple-glow bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 cursor-pointer">
+                    <div class="feature-icon text-4xl text-purple-400 mb-4">
                         <i class="fas fa-mobile-alt"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-white mb-2">Mobile Friendly</h3>
-                    <p class="text-gray-300">Optimized for all devices with touch and swipe controls</p>
+                    <h3 class="feature-title text-xl font-semibold text-white mb-2">Mobile Friendly</h3>
+                    <p class="feature-text text-gray-300">Optimized for all devices with touch and swipe controls</p>
                 </div>
             </div>
 
