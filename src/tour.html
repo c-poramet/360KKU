@@ -193,18 +193,25 @@
                 // Set the zoom level first
                 minimap.zoom(targetZoom);
                 
-                // Get the sizes after zooming
+                // Get the sizes and current pan after zooming
                 const sizes = minimap.getSizes();
+                const currentPan = minimap.getPan();
                 const viewportWidth = sizes.width;
                 const viewportHeight = sizes.height;
                 const realZoom = sizes.realZoom;
                 
-                // Calculate the pan needed to center the point
-                // We want the point (x, y) to be at the center of the viewport
-                const panX = (viewportWidth / 2) - (x * realZoom);
-                const panY = (viewportHeight / 2) - (y * realZoom);
+                // Calculate where the marker currently is in viewport coordinates
+                const markerViewportX = (x * realZoom) + currentPan.x;
+                const markerViewportY = (y * realZoom) + currentPan.y;
                 
-                minimap.pan({ x: panX, y: panY });
+                // Calculate how much we need to move to center it
+                const centerX = viewportWidth / 2;
+                const centerY = viewportHeight / 2;
+                const deltaX = centerX - markerViewportX;
+                const deltaY = centerY - markerViewportY;
+                
+                // Apply the relative pan adjustment
+                minimap.panBy({ x: deltaX, y: deltaY });
             }
 
             loadTour();
