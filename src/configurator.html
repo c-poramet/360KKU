@@ -468,11 +468,13 @@
             appState.ctx = appState.canvas.getContext('2d');
             
             // Set up high-DPI canvas for crisp rendering
-            const rect = appState.canvas.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            appState.canvas.width = rect.width * dpr;
-            appState.canvas.height = rect.height * dpr;
-            appState.ctx.scale(dpr, dpr);
+            if (appState.canvas && appState.ctx) {
+                const rect = appState.canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                appState.canvas.width = rect.width * dpr;
+                appState.canvas.height = rect.height * dpr;
+                appState.ctx.scale(dpr, dpr);
+            }
         }
 
         /**
@@ -496,7 +498,7 @@
             document.getElementById('fade-duration-range').addEventListener('input', updateFadeDuration);
             
             // JSON export
-            document.getElementById('copy-json').addEventListener('click', copyJsonToClipboard);
+            document.getElementById('copy-json').addEventListener('click', copyToClipboard);
         }
 
         /**
@@ -566,6 +568,12 @@
         function drawFloorPlan() {
             const ctx = appState.ctx;
             const canvas = appState.canvas;
+            
+            // Check if canvas and context are available
+            if (!canvas || !ctx) {
+                console.warn('Canvas or context not available for drawing');
+                return;
+            }
             
             // Clear the entire canvas
             ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
@@ -1118,7 +1126,11 @@
             updateHeaderStats();
             updateCurrentSceneDisplay();
             updateJsonOutput();
-            drawFloorPlan(); // Redraw canvas with updated markers
+            
+            // Only draw floor plan if canvas is initialized
+            if (appState.canvas && appState.ctx) {
+                drawFloorPlan(); // Redraw canvas with updated markers
+            }
         }
 
         /**
@@ -1607,12 +1619,41 @@
         }
 
         /**
+         * Show helper dialog for image path format
+         */
+        function showImagePathHelper() {
+            const message = `
+Image Path Format Guidelines:
+
+For local development:
+• images/scene1.jpg
+• panoramas/office.jpg
+• photos/entrance.png
+
+For web deployment:
+• https://your-domain.com/images/scene1.jpg
+• /assets/panoramas/office.jpg
+
+Supported formats: .jpg, .jpeg, .png, .webp
+
+Note: Ensure images are accessible from your web server.
+            `;
+            
+            alert(message);
+        }
+
+        /**
          * Initialize the configurator application
          */
         function initializeConfigurator() {
             // Initialize canvas
-            appState.canvas = document.getElementById('floor-plan-canvas');
-            appState.ctx = appState.canvas.getContext('2d');
+            appState.canvas = document.getElementById('minimap-canvas');
+            if (appState.canvas) {
+                appState.ctx = appState.canvas.getContext('2d');
+            } else {
+                console.error('Canvas element not found');
+                return;
+            }
             
             // Set up event handlers
             setupFloorPlanUpload();
