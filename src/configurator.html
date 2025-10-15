@@ -99,9 +99,28 @@
                     Floor Plan & Scenes
                 </h2>
                 
-                <!-- Minimap Canvas -->
+                <!-- Floor Selection -->
                 <div class="mb-4">
-                    <canvas id="minimap-canvas" width="280" height="200" class="w-full"></canvas>
+                    <label class="block text-sm font-medium mb-2">Select Floor:</label>
+                    <select id="floor-select" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white">
+                        <option value="floor1">Floor 1</option>
+                        <option value="floor2">Floor 2</option>
+                    </select>
+                </div>
+                
+                <!-- Floor Plan Display -->
+                <div class="mb-4 relative">
+                    <div id="svg-container" class="w-full border-2 border-gray-600 rounded bg-white" style="height: 250px; overflow: hidden;">
+                        <svg id="floor-plan-svg" width="100%" height="100%" style="cursor: crosshair;">
+                            <!-- SVG floor plan will be loaded here -->
+                        </svg>
+                    </div>
+                    <div id="loading-floorplan" class="absolute inset-0 flex items-center justify-center bg-gray-700 rounded">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <p>Loading floor plan...</p>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Scene Management Controls -->
@@ -242,7 +261,10 @@
             currentSceneId: null,        // Currently loaded scene in viewer
             viewer: null,                // Pannellum viewer instance
             canvas: null,                // Minimap canvas element
-            ctx: null                    // Canvas 2D context
+            ctx: null,                   // Canvas 2D context
+            floorPlanSvg: null,          // Loaded SVG floor plan
+            availableImages: [],         // Auto-detected 360 images
+            currentFloor: 'floor1'       // Current floor being edited
         };
 
         // ===========================
