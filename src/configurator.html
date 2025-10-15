@@ -582,21 +582,8 @@
         // ===========================
         // INITIALIZATION
         // ===========================
+        // NOTE: Removed duplicate DOMContentLoaded listener - see end of script for single entry point
         
-        /**
-         * Initialize the visual tour configurator when the page loads
-         */
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeCanvas();
-            setupEventListeners();
-            initializePannellumViewer();
-            updateAllUI();
-            
-            console.log('Visual Tour Builder initialized successfully');
-        });
-
-
-
         /**
          * Initialize the floor plan canvas and set up high-DPI rendering
          */
@@ -1152,6 +1139,7 @@
         // ===========================
         // PANNELLUM VIEWER MANAGEMENT  
         // ===========================
+        // NOTE: First loadSceneInViewer removed - duplicate of better implementation below
         
         /**
          * Initialize the Pannellum viewer (empty state)
@@ -1159,145 +1147,6 @@
         function initializePannellumViewer() {
             // The viewer will be initialized when a scene is loaded
             clearPannellumViewer();
-        }
-
-        /**
-         * Load a scene into the Pannellum viewer
-         */
-        function loadSceneInViewer(sceneId) {
-            if (!tourData.scenes[sceneId]) {
-                console.error('Scene not found:', sceneId);
-                return;
-            }
-            
-            const scene = tourData.scenes[sceneId];
-            appState.currentSceneId = sceneId;
-            
-            // Destroy existing viewer if any
-            if (appState.viewer) {
-                appState.viewer.destroy();
-                appState.viewer = null;
-            }
-            
-            // Hide empty state
-            document.getElementById('viewer-empty-state').style.display = 'none';
-            
-            // Check if panorama path exists or use development mode
-            const isDevelopmentPath = scene.panorama.startsWith('images/');
-            
-            if (isDevelopmentPath) {
-                // Development mode - show placeholder and enable hotspot functionality
-                const viewerEl = document.getElementById('panorama-viewer');
-                viewerEl.innerHTML = `
-                    <div class="flex items-center justify-center h-full bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg">
-                        <div class="text-center p-8">
-                            <i class="fas fa-image text-6xl text-gray-500 mb-4"></i>
-                            <h3 class="text-xl font-semibold text-white mb-2">Development Mode</h3>
-                            <p class="text-gray-300 mb-4">Scene: ${scene.title}</p>
-                            <p class="text-gray-400 text-sm mb-4">Image path: ${scene.panorama}</p>
-                            <p class="text-blue-300 text-sm">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Click anywhere to add hotspots (coordinates will be simulated)
-                            </p>
-                        </div>
-                    </div>
-                `;
-                
-                // Set up click handler for development mode
-                viewerEl.onclick = function(e) {
-                    if (appState.hotspotMode) {
-                        const rect = viewerEl.getBoundingClientRect();
-                        const yaw = ((e.clientX - rect.left) / rect.width) * 360 - 180; // Convert to yaw
-                        const pitch = ((e.clientY - rect.top) / rect.height) * 180 - 90;   // Convert to pitch
-                        
-                        console.log(`Development mode hotspot click at yaw: ${yaw.toFixed(2)}, pitch: ${pitch.toFixed(2)}`);
-                        handleHotspotClick({ yaw, pitch });
-                    }
-                };
-                
-                // Enable hotspot mode button
-                const hotspotBtn = document.getElementById('add-hotspot-mode');
-                if (hotspotBtn) {
-                    hotspotBtn.disabled = false;
-                }
-                
-                // Render existing hotspots
-                setTimeout(() => renderHotspots(), 100);
-                
-                console.log(`Loaded scene in development mode: ${sceneId}`);
-                
-            } else {
-                // Production mode - load actual panorama
-                const config = {
-                    "type": "equirectangular",
-                    "panorama": scene.panorama,
-                    "autoLoad": true,
-                    "pitch": 0,
-                    "yaw": 0,
-                    "hfov": 100
-                };
-                
-                try {
-                    console.log(`🔄 Initializing Pannellum viewer for scene: ${sceneId}`);
-                    
-                    // Initialize Pannellum viewer
-                    appState.viewer = pannellum.viewer('panorama-viewer', config);
-                    
-                    // Remove any previous load event listeners to prevent duplicates
-                    appState.viewer.off('load');
-                    
-                    // *** SINGLE SOURCE OF TRUTH: Wait for viewer 'load' event ***
-                    // This is the ONLY place where renderHotspots() is called after scene load
-                    appState.viewer.on('load', function() {
-                        console.log(`✅ Scene loaded successfully: ${sceneId}`);
-                        console.log(`🔄 Setting up interactions and rendering hotspots...`);
-                        
-                        // Set up viewer interactions (requires loaded viewer)
-                        setupHotspotClickHandler();
-                        setupMouseTracking();
-                        
-                        // Get hotspots for current scene
-                        const currentScene = tourData.scenes[sceneId];
-                        const currentHotspots = currentScene?.hotSpots || [];
-                        console.log(`📍 Rendering ${currentHotspots.length} hotspots for scene: ${sceneId}`);
-                        
-                        // Render hotspots - this is the ONLY call after scene switch
-                        renderHotspots();
-                        
-                        console.log(`✅ Scene setup complete: ${sceneId}`);
-                    });
-                    
-                    // Set up error handler
-                    appState.viewer.on('error', function(error) {
-                        console.error(`❌ Error loading panorama for scene ${sceneId}:`, error);
-                    });
-                    
-                    // Enable hotspot mode button
-                    const hotspotBtn = document.getElementById('add-hotspot-mode');
-                    if (hotspotBtn) {
-                        hotspotBtn.disabled = false;
-                    }
-                    
-                } catch (error) {
-                    console.error('Error initializing viewer:', error);
-                    
-                    // Show error state
-                    const viewerEl = document.getElementById('panorama-viewer');
-                    viewerEl.innerHTML = `
-                        <div class="flex items-center justify-center h-full bg-red-900 bg-opacity-20 border-2 border-red-600 rounded-lg">
-                            <div class="text-center p-8">
-                                <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
-                                <h3 class="text-xl font-semibold text-white mb-2">Error Loading Scene</h3>
-                                <p class="text-red-300 mb-4">${error.message || 'Unknown error'}</p>
-                                <p class="text-gray-400 text-sm">Path: ${scene.panorama}</p>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // Update UI to reflect current scene
-            updateAllUI();
         }
 
         /**
@@ -1361,6 +1210,7 @@
 
         /**
          * Set up hotspot click handler for the panorama viewer
+         * NOTE: This function is called by the viewer 'load' event in loadSceneInViewer
          */
         function setupHotspotClickHandler() {
             const viewerElement = document.getElementById('panorama-viewer');
@@ -1616,31 +1466,12 @@
                         "yaw": hotspot.yaw,
                         "type": "info",
                         "text": hotspot.text,
-                        "URL": "#",  // Dummy URL to ensure hotspot is clickable
+                        "cssClass": "hotspot-preview",  // Use CSS class for styling
                         "clickHandlerFunc": function(evt, args) {
                             evt.preventDefault();
                             console.log(`Hotspot clicked: ${hotspot.text} -> ${hotspot.sceneId}`);
                             // Future: navigate to scene
-                        },
-                        "createTooltipFunc": function(hotSpotDiv) {
-                            console.log(`🎨 createTooltipFunc called for hotspot ${index}`);
-                            console.log(`  hotSpotDiv:`, hotSpotDiv);
-                            console.log(`  hotSpotDiv className:`, hotSpotDiv.className);
-                            
-                            // SUPER SIMPLE TEST - just make it red and big
-                            hotSpotDiv.style.background = 'red';
-                            hotSpotDiv.style.width = '50px';
-                            hotSpotDiv.style.height = '50px';
-                            hotSpotDiv.style.border = '5px solid yellow';
-                            hotSpotDiv.style.borderRadius = '50%';
-                            hotSpotDiv.style.display = 'block';
-                            hotSpotDiv.style.visibility = 'visible';
-                            hotSpotDiv.style.opacity = '1';
-                            hotSpotDiv.style.position = 'absolute';
-                            hotSpotDiv.style.zIndex = '999999';
-                            
-                            console.log(`  ✅ Applied aggressive styling to hotSpotDiv`);
-                            console.log(`  Final style:`, hotSpotDiv.style.cssText);
+                            loadSceneInViewer(hotspot.sceneId);
                         }
                     };
                     
@@ -1654,97 +1485,10 @@
             // Verify hotspots were added
             try {
                 const config = appState.viewer.getConfig();
-                console.log(`📊 Verification: Viewer now has ${config.hotSpots ? config.hotSpots.length : 0} hotspots in config`);
+                console.log(`📊 Viewer now has ${config.hotSpots ? config.hotSpots.length : 0} hotspots`);
             } catch (e) {
                 console.error('Error verifying hotspots:', e);
             }
-            
-            // Check DOM for hotspot elements AND manually add overlay divs if needed
-            setTimeout(() => {
-                const hotspotElements = document.querySelectorAll('.pnlm-hotspot, .hotspot-preview, .pnlm-hotspot-base');
-                console.log(`🔍 DOM Check: Found ${hotspotElements.length} hotspot elements in DOM`);
-                hotspotElements.forEach((el, idx) => {
-                    console.log(`  Hotspot ${idx}:`, el.className, 'Style:', el.style.cssText);
-                    console.log(`  Inner HTML:`, el.innerHTML);
-                    console.log(`  Children:`, el.children.length);
-                    
-                    // Force visibility
-                    el.style.display = 'block';
-                    el.style.visibility = 'visible';
-                    el.style.opacity = '1';
-                    el.style.background = 'red';
-                    el.style.width = '50px';
-                    el.style.height = '50px';
-                    el.style.border = '5px solid yellow';
-                    console.log(`  🎨 Forced styling on hotspot ${idx}`);
-                });
-                
-                if (hotspotElements.length === 0 && hotspots.length > 0) {
-                    console.error('⚠️ WARNING: Hotspots added to config but not visible in DOM!');
-                    console.log('🔧 Attempting to manually inject hotspot overlays...');
-                    injectManualHotspotOverlays(hotspots);
-                }
-            }, 500);
-            
-            console.log(`✅ Successfully rendered ${hotspots.length} hotspots`);
-        }
-
-        /**
-         * Manually inject visible hotspot overlays when Pannellum fails to render them
-         */
-        function injectManualHotspotOverlays(hotspots) {
-            const viewerContainer = document.getElementById('panorama-viewer');
-            if (!viewerContainer || !appState.viewer) {
-                console.error('Cannot inject manual overlays - viewer not found');
-                return;
-            }
-            
-            // Remove any existing manual overlays
-            const existingOverlays = viewerContainer.querySelectorAll('.manual-hotspot-overlay');
-            existingOverlays.forEach(overlay => overlay.remove());
-            
-            console.log(`📌 Injecting ${hotspots.length} manual hotspot overlays...`);
-            
-            hotspots.forEach((hotspot, index) => {
-                // Get screen coordinates from pitch/yaw
-                try {
-                    const coords = appState.viewer.pitchYawToCoords(hotspot.pitch, hotspot.yaw);
-                    
-                    // Create overlay div
-                    const overlay = document.createElement('div');
-                    overlay.className = 'manual-hotspot-overlay';
-                    overlay.style.cssText = `
-                        position: absolute;
-                        left: ${coords[0]}px;
-                        top: ${coords[1]}px;
-                        width: 50px;
-                        height: 50px;
-                        background: red;
-                        border: 5px solid yellow;
-                        border-radius: 50%;
-                        transform: translate(-25px, -25px);
-                        z-index: 999999;
-                        pointer-events: auto;
-                        cursor: pointer;
-                        display: block;
-                        visibility: visible;
-                        opacity: 1;
-                    `;
-                    overlay.title = hotspot.text;
-                    
-                    // Add click handler
-                    overlay.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        console.log(`Manual hotspot clicked: ${hotspot.text} -> ${hotspot.sceneId}`);
-                        alert(`Navigate to: ${hotspot.text}`);
-                    });
-                    
-                    viewerContainer.appendChild(overlay);
-                    console.log(`  ✅ Injected overlay ${index} at screen coords [${coords[0]}, ${coords[1]}]`);
-                } catch (e) {
-                    console.error(`  ❌ Failed to inject overlay ${index}:`, e);
-                }
-            });
         }
 
         /**
@@ -1982,6 +1726,7 @@
         
         /**
          * Load a scene's panorama into the Pannellum viewer
+         * FIXED: Now properly waits for viewer 'load' event before rendering hotspots
          */
         function loadSceneInViewer(sceneId) {
             if (!tourData.scenes[sceneId]) return;
@@ -1992,9 +1737,10 @@
             // Hide empty state
             document.getElementById('viewer-empty-state').style.display = 'none';
             
-            // Initialize or update viewer
+            // Destroy previous viewer if exists
             if (appState.viewer) {
                 appState.viewer.destroy();
+                appState.viewer = null;
             }
             
             // Create viewer configuration
@@ -2010,11 +1756,24 @@
             // Initialize Pannellum viewer
             appState.viewer = pannellum.viewer('panorama-viewer', viewerConfig);
             
-            // Set up mouse tracking for coordinates display
-            setupMouseTracking();
+            // *** CRITICAL FIX: Wait for 'load' event before setting up hotspots ***
+            appState.viewer.on('load', function() {
+                console.log(`✅ Scene loaded: ${sceneId}`);
+                
+                // Set up mouse tracking for coordinates display
+                setupMouseTracking();
+                
+                // Set up hotspot click handling
+                setupHotspotClickHandler();
+                
+                // Render existing hotspots AFTER viewer is loaded
+                renderHotspots();
+            });
             
-            // Set up hotspot click handling
-            setupHotspotClickHandling();
+            // Handle load errors
+            appState.viewer.on('error', function(error) {
+                console.error(`❌ Error loading scene ${sceneId}:`, error);
+            });
             
             // Enable hotspot adding button
             const hotspotBtn = document.getElementById('add-hotspot-mode');
@@ -2022,137 +1781,13 @@
                 hotspotBtn.disabled = false;
             }
             
-            // Update scenes list to show active scene
+            // Update UI elements that don't depend on loaded viewer
             updateScenesList();
-            
-            // Redraw canvas markers to highlight current scene
             drawFloorPlan();
-            
-            console.log(`Loaded scene: ${sceneId}`);
         }
 
-        /**
-         * Set up mouse coordinate tracking over the panorama viewer
-         */
-        function setupMouseTracking() {
-            const viewerElement = document.getElementById('panorama-viewer');
-            const coordsDisplay = document.getElementById('coordinates-display');
-            const pitchSpan = document.getElementById('current-pitch');
-            const yawSpan = document.getElementById('current-yaw');
-            
-            viewerElement.addEventListener('mousemove', function(event) {
-                if (appState.addingHotspotsMode && appState.viewer) {
-                    try {
-                        const coords = appState.viewer.mouseEventToCoords(event);
-                        if (coords && coords.length >= 2) {
-                            pitchSpan.textContent = coords[0].toFixed(1);
-                            yawSpan.textContent = coords[1].toFixed(1);
-                        }
-                    } catch (e) {
-                        // Ignore coordinate calculation errors
-                    }
-                }
-            });
-        }
-
-        /**
-         * Set up click handling for adding hotspots to the panorama
-         */
-        function setupHotspotClickHandling() {
-            const viewerElement = document.getElementById('panorama-viewer');
-            
-            viewerElement.addEventListener('mousedown', function(event) {
-                if (!appState.addingHotspotsMode || !appState.viewer) return;
-                
-                event.preventDefault();
-                event.stopPropagation();
-                
-                try {
-                    // Get pitch and yaw coordinates from click
-                    const coords = appState.viewer.mouseEventToCoords(event);
-                    if (!coords || coords.length < 2) return;
-                    
-                    const pitch = coords[0];
-                    const yaw = coords[1];
-                    
-                    // Get available destination scenes (excluding current scene)
-                    const availableScenes = Object.keys(tourData.scenes)
-                        .filter(id => id !== appState.currentSceneId);
-                    
-                    if (availableScenes.length === 0) {
-                        alert('No other scenes available! Add more scenes first.');
-                        return;
-                    }
-                    
-                    // Create destination scene selection
-                    const sceneOptions = availableScenes.map(sceneId => 
-                        `${sceneId}: ${tourData.scenes[sceneId].title}`
-                    ).join('\\n');
-                    
-                    const destinationScene = prompt(
-                        `Select destination scene for this hotspot:\\n\\n${sceneOptions}\\n\\nEnter Scene ID:`
-                    );
-                    
-                    if (!destinationScene || !tourData.scenes[destinationScene]) {
-                        alert('Invalid scene ID!');
-                        return;
-                    }
-                    
-                    const hotspotText = prompt('Enter hotspot text:', `Go to ${tourData.scenes[destinationScene].title}`);
-                    if (!hotspotText) return;
-                    
-                    // Add hotspot to current scene
-                    const hotspot = {
-                        "pitch": parseFloat(pitch.toFixed(1)),
-                        "yaw": parseFloat(yaw.toFixed(1)),
-                        "type": "scene",
-                        "text": hotspotText,
-                        "sceneId": destinationScene
-                    };
-                    
-                    tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
-                    
-                    // Update UI
-                    updateScenesList();
-                    updateJsonOutput();
-                    
-                    console.log(`Added hotspot at pitch: ${pitch}, yaw: ${yaw} to scene: ${destinationScene}`);
-                    
-                } catch (error) {
-                    console.error('Error adding hotspot:', error);
-                    alert('Error adding hotspot. Please try again.');
-                }
-            });
-        }
-
-        // ===========================
-        // HOTSPOT MANAGEMENT
-        // ===========================
-        
-        /**
-         * Toggle hotspot adding mode
-         */
-        function toggleAddHotspotsMode() {
-            if (!appState.currentSceneId) return;
-            
-            appState.addingHotspotsMode = !appState.addingHotspotsMode;
-            
-            const button = document.getElementById('toggle-add-hotspots');
-            const viewer = document.getElementById('panorama-viewer');
-            const coordsDisplay = document.getElementById('coordinates-display');
-            
-            if (appState.addingHotspotsMode) {
-                button.innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Adding Hotspots';
-                button.className = button.className.replace('bg-blue-600 hover:bg-blue-700', 'bg-red-600 hover:bg-red-700');
-                viewer.classList.add('adding-hotspots');
-                coordsDisplay.classList.remove('hidden');
-            } else {
-                button.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Start Adding Hotspots';
-                button.className = button.className.replace('bg-red-600 hover:bg-red-700', 'bg-blue-600 hover:bg-blue-700');
-                viewer.classList.remove('adding-hotspots');
-                coordsDisplay.classList.add('hidden');
-            }
-        }
+        // Duplicate setupMouseTracking and setupHotspotClickHandling removed
+        // (Already defined earlier in the script)
 
         // ===========================
         // TOUR SETTINGS
