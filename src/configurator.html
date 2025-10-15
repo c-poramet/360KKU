@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360° Tour Configurator - Visual Tour Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom styles for the visual tour configurator */
+        #minimap-canvas {
+            border: 3px solid #374151;
+            border-radius: 0.75rem;
+            cursor: crosshair;
+            background: #f8fafc;
+        }
+        
+        #minimap-canvas:hover {
+            border-color: #A73B24;
+            box-shadow: 0 0 0 3px rgba(167, 59, 36, 0.2);
+        }
+        
+        #panorama-viewer {
+            height: 450px;
+            width: 100%;
+            border: 3px solid #374151;
+            border-radius: 0.75rem;
+            background: #1f2937;
+            position: relative;
+        }
+        
+        #panorama-viewer.hotspot-mode {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+            cursor: crosshair;
+        }
+        
+        .scene-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #A73B24;
+            border: 3px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .scene-marker:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        
+        .scene-marker.active {
+            background: #dc2626;
+            border-color: #fbbf24;
+        }
+        
+        .scene-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .scene-item:hover {
+            background-color: rgba(167, 59, 36, 0.1);
+            border-color: rgba(167, 59, 36, 0.4);
+            transform: translateX(4px);
+        }
+        
+        .scene-item.active {
+            background-color: rgba(167, 59, 36, 0.2);
+            border-color: rgba(167, 59, 36, 0.6);
+        }
+        
+        .coordinates-display {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #10b981;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        /* Modal styles */
+        dialog {
+            border: none;
+            border-radius: 1rem;
+            padding: 0;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 90vw;
+        }
+        
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+        
+        .file-drop-zone {
+            border: 2px dashed #9ca3af;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            border-color: #A73B24;
+            background-color: rgba(167, 59, 36, 0.05);
+        }
+        
+        /* Custom scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 3px;
+        }
+        
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #A73B24;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-gray-900 to-gray-800 p-6 border-b border-gray-700 shadow-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-1">
+                    <i class="fas fa-magic mr-3 text-orange-500"></i>
+                    Visual Tour Builder
+                </h1>
+                <p class="text-gray-300 text-sm">Create interactive 360° tours with drag-and-drop simplicity</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-400 mb-1">Scenes: <span id="header-scene-count" class="text-white font-bold">0</span></div>
+                <div class="text-sm text-gray-400">Hotspots: <span id="header-hotspot-count" class="text-white font-bold">0</span></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="flex" style="height: calc(100vh - 120px);">
+        <!-- Left Panel - Floor Plan & Scene Management -->
+        <div class="w-1/3 p-6 bg-gray-800 border-r border-gray-700 overflow-y-auto custom-scroll">
+            <!-- Floor Plan Upload Section -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-white">
+                    <i class="fas fa-map mr-2 text-blue-400"></i>
+                    Floor Plan
+                </h2>
+                
+                <!-- Floor Plan Upload -->
+                <div class="mb-4">
+                    <div class="file-drop-zone" id="floor-plan-drop-zone">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-300 mb-2">Drop floor plan image here</p>
+                        <p class="text-xs text-gray-500 mb-3">or click to browse</p>
+                        <input type="file" id="floor-plan-input" accept="image/*" class="hidden">
+                        <button type="button" onclick="document.getElementById('floor-plan-input').click()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                            <i class="fas fa-folder-open mr-1"></i>
+                            Select Image
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Minimap Canvas -->
+                <div class="mb-4 relative">
+                    <canvas id="minimap-canvas" width="320" height="240" class="w-full"></canvas>
+                    <div id="minimap-overlay" class="absolute inset-0 flex items-center justify-center bg-gray-700 bg-opacity-75 rounded-lg">
+                        <div class="text-center text-gray-300">
+                            <i class="fas fa-image text-4xl mb-3"></i>
+                            <p class="text-lg font-medium">Upload Floor Plan</p>
+                            <p class="text-sm">Start by uploading your building layout</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <p class="text-xs text-gray-300">
+                        <i class="fas fa-lightbulb mr-1 text-yellow-400"></i>
+                        <strong>Instructions:</strong> Upload your floor plan, then click anywhere on it to create scenes.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Scene List -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white">
+                        <i class="fas fa-camera mr-2 text-green-400"></i>
+                        Scenes
+                    </h3>
+                    <span class="bg-gray-700 px-2 py-1 rounded-full text-xs font-medium">
+                        <span id="scene-count">0</span> scenes
+                    </span>
+                </div>
+                
+                <div id="scene-list" class="space-y-2 max-h-64 overflow-y-auto custom-scroll">
+                    <div class="text-gray-500 text-sm italic text-center py-8">
+                        <i class="fas fa-plus-circle text-2xl mb-2"></i>
+                        <p>No scenes created yet</p>
+                        <p class="text-xs">Click on the floor plan to add your first scene</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tour Settings -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-4 text-white">
+                    <i class="fas fa-cog mr-2 text-purple-400"></i>
+                    Tour Settings
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Starting Scene:</label>
+                        <select id="first-scene-select" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                            <option value="">Choose first scene...</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Transition Duration:</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="range" id="fade-duration-range" min="500" max="3000" value="1000" 
+                                   class="flex-1 accent-blue-500">
+                            <span id="fade-duration-display" class="bg-gray-700 px-2 py-1 rounded text-sm min-w-16 text-center">1000ms</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel - Panorama Viewer -->
+        <div class="w-2/3 p-6 bg-gray-900">
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-white">
+                        <i class="fas fa-globe mr-2 text-green-400"></i>
+                        360° Panorama Viewer
+                    </h2>
+                    
+                    <div class="flex items-center space-x-3">
+                        <div class="text-sm text-gray-400">
+                            Active Scene: <span id="current-scene-display" class="text-white font-medium">None</span>
+                        </div>
+                        <button id="add-hotspot-mode" disabled
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors">
+                            <i class="fas fa-crosshairs mr-2"></i>
+                            <span id="hotspot-button-text">Add Hotspots</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Status Bar -->
+                <div class="flex items-center justify-between mb-4 p-3 bg-gray-800 rounded-lg">
+                    <div class="flex items-center space-x-4 text-sm">
+                        <div class="text-gray-400">
+                            <i class="fas fa-mouse-pointer mr-1"></i>
+                            <span id="interaction-status">Select a scene to begin</span>
+                        </div>
+                        <div class="text-gray-400" id="hotspot-count-display">
+                            <i class="fas fa-map-pin mr-1"></i>
+                            <span id="current-scene-hotspots">0</span> hotspots
+                        </div>
+                    </div>
+                    <div id="coordinates-display" class="coordinates-display hidden">
+                        <i class="fas fa-compass mr-1"></i>
+                        Pitch: <span id="current-pitch">0.0</span>° | Yaw: <span id="current-yaw">0.0</span>°
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Panorama Viewer Container -->
+            <div class="relative">
+                <div id="panorama-viewer" class="rounded-lg overflow-hidden"></div>
+                
+                <!-- Empty State -->
+                <div id="viewer-empty-state" class="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg">
+                    <div class="text-center text-gray-400">
+                        <i class="fas fa-camera text-6xl mb-4 text-gray-600"></i>
+                        <p class="text-xl font-medium mb-2">No Scene Selected</p>
+                        <p class="text-gray-500">Create scenes on the floor plan, then click them to view</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Panel - JSON Output -->
+    <div class="bg-gray-800 border-t border-gray-700 p-6" style="height: 200px;">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white">
+                <i class="fas fa-code mr-2 text-orange-400"></i>
+                Generated tourData JSON
+            </h2>
+            <div class="flex items-center space-x-3">
+                <div class="text-sm text-gray-400">
+                    Auto-updating • Ready for copy-paste
+                </div>
+                <button id="copy-json" 
+                        class="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors shadow-lg">
+                    <i class="fas fa-copy mr-2"></i>
+                    Copy JSON
+                </button>
+            </div>
+        </div>
+        
+        <textarea id="json-output" 
+                  class="w-full h-32 p-4 bg-gray-900 border border-gray-600 rounded-lg text-green-400 font-mono text-sm resize-none custom-scroll"
+                  placeholder="Your complete tourData configuration will appear here automatically as you build your tour..."
+                  readonly></textarea>
+    </div>
+
+    <!-- Scene Configuration Modal -->
+    <dialog id="scene-modal" class="backdrop:bg-black backdrop:bg-opacity-75">
+        <div class="bg-gray-800 text-white p-6 rounded-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold">
+                    <i class="fas fa-camera mr-2 text-blue-400"></i>
+                    <span id="modal-title">Configure Scene</span>
+                </h3>
+                <button id="close-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="scene-form" class="space-y-5">
+                <!-- Scene ID -->
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Scene ID</label>
+                    <input type="text" id="scene-id" required 
+                           class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="e.g., main-lobby, entrance-hall">
+                    <p class="text-xs text-gray-400 mt-1">Unique identifier for this scene (no spaces or special characters)</p>
+                </div>
+                
+                <!-- Scene Title -->
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Scene Title</label>
+                    <input type="text" id="scene-title" required 
+                           class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="e.g., Main Lobby, Building Entrance">
+                    <p class="text-xs text-gray-400 mt-1">Display name shown to users</p>
+                </div>
+                
+                <!-- Panorama File Upload -->
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-gray-300">360° Image File (for preview)</label>
+                    <div class="file-drop-zone" id="panorama-drop-zone">
+                        <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-300 mb-1">Drop 360° image here or click to browse</p>
+                        <input type="file" id="panorama-file" accept="image/*" class="hidden">
+                        <button type="button" onclick="document.getElementById('panorama-file').click()" 
+                                class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
+                            Select Image
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">This image will be used for preview in the configurator</p>
+                </div>
+                
+                <!-- Deployment Path -->
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-gray-300">
+                        Deployment Image Path 
+                        <span class="text-green-400 text-xs ml-2">
+                            <i class="fas fa-magic"></i> Auto-generated
+                        </span>
+                    </label>
+                    <input type="text" id="panorama-path" required 
+                           class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Auto-generated based on filename...">
+                    <p class="text-xs text-gray-400 mt-1">
+                        <i class="fas fa-lightbulb text-yellow-400"></i>
+                        Automatically detects floor level from filename and generates: <code>images/floor1/</code> or <code>images/floor2/</code>
+                    </p>
+                </div>
+                
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-700">
+                    <button type="button" id="cancel-scene" 
+                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" id="delete-scene" 
+                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors hidden">
+                        <i class="fas fa-trash mr-1"></i>
+                        Delete Scene
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        <span id="save-button-text">Create Scene</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Hotspot Modal -->
+    <dialog id="hotspot-modal" class="backdrop:bg-black backdrop:bg-opacity-75">
+        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md mx-auto shadow-2xl border border-gray-600">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-white">Add Navigation Hotspot</h2>
+                <button id="close-hotspot-modal" class="text-gray-400 hover:text-white text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="hotspot-form">
+                <!-- Destination Scene Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Destination Scene</label>
+                    <select id="hotspot-destination" required 
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select destination scene...</option>
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Where users will go when clicking this hotspot</p>
+                </div>
+                
+                <!-- Hotspot Text -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Hotspot Text</label>
+                    <input type="text" id="hotspot-text" required 
+                           class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="e.g., Go to Main Lobby, Enter Computer Lab">
+                    <p class="text-xs text-gray-400 mt-1">Text shown when users hover over the hotspot</p>
+                </div>
+                
+                <!-- Coordinates Display -->
+                <div class="mb-4 p-3 bg-gray-900 rounded-lg">
+                    <p class="text-xs text-gray-400 mb-1">Coordinates</p>
+                    <p class="text-sm text-blue-300">
+                        Pitch: <span id="hotspot-pitch">0</span>° | 
+                        Yaw: <span id="hotspot-yaw">0</span>°
+                    </p>
+                </div>
+                
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-700">
+                    <button type="button" id="cancel-hotspot" 
+                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Add Hotspot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        // ===========================
+        // GLOBAL STATE MANAGEMENT
+        // ===========================
+        
+        /**
+         * Main tour configuration object that follows Pannellum's exact structure
+         * This will be serialized to JSON and used in the final tour application
+         */
+        let tourData = {
+            "default": {
+                "firstScene": "",
+                "sceneFadeDuration": 1000,
+                "autoLoad": true
+            },
+            "scenes": {}
+        };
+        
+        /**
+         * Application state and runtime variables
+         */
+        let appState = {
+            currentSceneId: null,        // Currently active/loaded scene
+            editingSceneId: null,        // Scene being edited in modal (null for new scene)
+            hotspotMode: false,          // Whether we're in hotspot-adding mode
+            viewer: null,                // Pannellum viewer instance
+            canvas: null,                // Floor plan canvas element
+            ctx: null,                   // Canvas 2D context
+            floorPlanImage: null,        // Uploaded floor plan image
+            sceneMarkers: [],            // Visual markers on the canvas
+            clickCoordinates: null,      // Coordinates where user clicked to add scene
+            pendingHotspotCoords: null   // Coordinates for hotspot being added
+        };
+
+        // ===========================
+        // INITIALIZATION
+        // ===========================
+        
+        /**
+         * Initialize the visual tour configurator when the page loads
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCanvas();
+            setupEventListeners();
+            initializePannellumViewer();
+            updateAllUI();
+            
+            console.log('Visual Tour Builder initialized successfully');
+        });
+
+
+
+        /**
+         * Initialize the floor plan canvas and set up high-DPI rendering
+         */
+        function initializeCanvas() {
+            appState.canvas = document.getElementById('minimap-canvas');
+            appState.ctx = appState.canvas.getContext('2d');
+            
+            // Set up high-DPI canvas for crisp rendering
+            if (appState.canvas && appState.ctx) {
+                const rect = appState.canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                appState.canvas.width = rect.width * dpr;
+                appState.canvas.height = rect.height * dpr;
+                appState.ctx.scale(dpr, dpr);
+            }
+        }
+
+        /**
+         * Set up all event listeners for the visual interface
+         */
+        function setupEventListeners() {
+            // Floor plan file upload
+            setupFloorPlanUpload();
+            
+            // Canvas clicks for adding scenes
+            appState.canvas.addEventListener('click', handleCanvasClick);
+            
+            // Scene modal management
+            setupSceneModal();
+            
+            // Hotspot modal management
+            setupHotspotModal();
+            
+            // Hotspot mode toggle
+            const hotspotBtn = document.getElementById('add-hotspot-mode');
+            if (hotspotBtn) {
+                hotspotBtn.addEventListener('click', toggleHotspotMode);
+            } else {
+                console.error('Hotspot mode button not found');
+            }
+            
+            // Tour settings
+            const firstSceneSelect = document.getElementById('first-scene-select');
+            if (firstSceneSelect) {
+                firstSceneSelect.addEventListener('change', updateFirstScene);
+            }
+            
+            const fadeDurationRange = document.getElementById('fade-duration-range');
+            if (fadeDurationRange) {
+                fadeDurationRange.addEventListener('input', updateFadeDuration);
+            }
+            
+            // JSON export
+            const copyBtn = document.getElementById('copy-json');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', copyToClipboard);
+            }
+        }
+
+        /**
+         * Set up floor plan image upload functionality with drag-and-drop
+         */
+        function setupFloorPlanUpload() {
+            const fileInput = document.getElementById('floor-plan-input');
+            const dropZone = document.getElementById('floor-plan-drop-zone');
+            
+            // File input change handler
+            fileInput.addEventListener('change', handleFloorPlanFile);
+            
+            // Drag and drop functionality
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    handleFloorPlanFile({ target: { files: files } });
+                }
+            });
+        }
+
+        /**
+         * Handle floor plan image file selection and load it onto canvas
+         */
+        function handleFloorPlanFile(event) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                alert('Please select a valid image file for the floor plan.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Store the floor plan image
+                    appState.floorPlanImage = img;
+                    
+                    // Draw the floor plan on canvas
+                    drawFloorPlan();
+                    
+                    // Hide the overlay
+                    document.getElementById('minimap-overlay').style.display = 'none';
+                    
+                    console.log('Floor plan loaded successfully');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /**
+         * Draw the floor plan image and all scene markers on the canvas
+         */
+        function drawFloorPlan() {
+            const ctx = appState.ctx;
+            const canvas = appState.canvas;
+            
+            // Check if canvas and context are available
+            if (!canvas || !ctx) {
+                console.warn('Canvas or context not available for drawing');
+                return;
+            }
+            
+            // Clear the entire canvas
+            ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+            
+            // Draw the floor plan image if available
+            if (appState.floorPlanImage) {
+                const canvasRect = canvas.getBoundingClientRect();
+                ctx.drawImage(
+                    appState.floorPlanImage, 
+                    0, 0, 
+                    canvasRect.width, 
+                    canvasRect.height
+                );
+            }
+            
+            // Draw all scene markers
+            drawSceneMarkers();
+        }
+
+        /**
+         * Draw visual markers for all created scenes on the floor plan
+         */
+        function drawSceneMarkers() {
+            const ctx = appState.ctx;
+            
+            Object.keys(tourData.scenes).forEach(sceneId => {
+                const scene = tourData.scenes[sceneId];
+                if (scene.map && scene.map.x !== undefined && scene.map.y !== undefined) {
+                    // Marker colors: active scene is red, others are blue
+                    const isActive = sceneId === appState.currentSceneId;
+                    const markerColor = isActive ? '#dc2626' : '#A73B24';
+                    const borderColor = isActive ? '#fbbf24' : '#ffffff';
+                    
+                    // Draw marker circle
+                    ctx.beginPath();
+                    ctx.arc(scene.map.x, scene.map.y, 10, 0, 2 * Math.PI);
+                    ctx.fillStyle = markerColor;
+                    ctx.fill();
+                    
+                    // Draw border
+                    ctx.beginPath();
+                    ctx.arc(scene.map.x, scene.map.y, 10, 0, 2 * Math.PI);
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Draw scene ID label
+                    ctx.fillStyle = '#000000';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(sceneId, scene.map.x, scene.map.y - 16);
+                }
+            });
+        }
+
+        /**
+         * Handle clicks on the floor plan canvas to add/edit scenes
+         */
+        function handleCanvasClick(event) {
+            if (!appState.floorPlanImage) {
+                alert('Please upload a floor plan image first.');
+                return;
+            }
+            
+            // Get click coordinates relative to canvas
+            const rect = appState.canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Check if we clicked on an existing scene marker
+            const clickedScene = findSceneAtCoordinates(x, y);
+            
+            if (clickedScene) {
+                // Edit existing scene
+                openSceneModal(clickedScene);
+            } else {
+                // Create new scene at clicked coordinates
+                appState.clickCoordinates = { x, y };
+                openSceneModal(null);
+            }
+        }
+
+        /**
+         * Find a scene marker at the given coordinates (within click tolerance)
+         */
+        function findSceneAtCoordinates(x, y) {
+            const tolerance = 15; // Click tolerance radius
+            
+            for (const [sceneId, scene] of Object.entries(tourData.scenes)) {
+                if (scene.map && scene.map.x !== undefined && scene.map.y !== undefined) {
+                    const distance = Math.sqrt(
+                        Math.pow(scene.map.x - x, 2) + Math.pow(scene.map.y - y, 2)
+                    );
+                    
+                    if (distance <= tolerance) {
+                        return sceneId;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Set up the scene configuration modal and its event handlers
+         */
+        function setupSceneModal() {
+            const modal = document.getElementById('scene-modal');
+            const form = document.getElementById('scene-form');
+            const closeBtn = document.getElementById('close-modal');
+            const cancelBtn = document.getElementById('cancel-scene');
+            const deleteBtn = document.getElementById('delete-scene');
+            
+            // Close modal handlers
+            closeBtn.addEventListener('click', closeSceneModal);
+            cancelBtn.addEventListener('click', closeSceneModal);
+            
+            // Form submission
+            form.addEventListener('submit', handleSceneFormSubmit);
+            
+            // Delete scene handler
+            deleteBtn.addEventListener('click', handleDeleteScene);
+            
+            // File upload for panorama preview
+            setupPanoramaUpload();
+        }
+
+        /**
+         * Set up the hotspot modal and its event handlers
+         */
+        function setupHotspotModal() {
+            const modal = document.getElementById('hotspot-modal');
+            const form = document.getElementById('hotspot-form');
+            const closeBtn = document.getElementById('close-hotspot-modal');
+            const cancelBtn = document.getElementById('cancel-hotspot');
+            
+            // Close modal handlers
+            closeBtn.addEventListener('click', closeHotspotModal);
+            cancelBtn.addEventListener('click', closeHotspotModal);
+            
+            // Form submission
+            form.addEventListener('submit', handleHotspotFormSubmit);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeHotspotModal();
+                }
+            });
+        }
+
+        /**
+         * Open the scene modal for creating new or editing existing scene
+         */
+        function openSceneModal(sceneId) {
+            const modal = document.getElementById('scene-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const saveButtonText = document.getElementById('save-button-text');
+            const deleteBtn = document.getElementById('delete-scene');
+            
+            appState.editingSceneId = sceneId;
+            
+            if (sceneId) {
+                // Editing existing scene
+                modalTitle.textContent = 'Edit Scene';
+                saveButtonText.textContent = 'Update Scene';
+                deleteBtn.classList.remove('hidden');
+                
+                // Populate form with existing scene data
+                const scene = tourData.scenes[sceneId];
+                document.getElementById('scene-id').value = sceneId;
+                document.getElementById('scene-title').value = scene.title;
+                document.getElementById('panorama-path').value = scene.panorama;
+                
+                // Disable scene ID editing for existing scenes
+                document.getElementById('scene-id').disabled = true;
+            } else {
+                // Creating new scene
+                modalTitle.textContent = 'Create New Scene';
+                saveButtonText.textContent = 'Create Scene';
+                deleteBtn.classList.add('hidden');
+                
+                // Clear form
+                document.getElementById('scene-form').reset();
+                document.getElementById('scene-id').disabled = false;
+                
+                // Reset panorama uploader
+                resetPanoramaUploader();
+            }
+            
+            modal.showModal();
+        }
+
+        /**
+         * Close the scene modal and reset form state
+         */
+        function closeSceneModal() {
+            const modal = document.getElementById('scene-modal');
+            modal.close();
+            
+            appState.editingSceneId = null;
+            appState.clickCoordinates = null;
+            document.getElementById('scene-form').reset();
+            
+            // Reset panorama uploader
+            resetPanoramaUploader();
+        }
+
+        /**
+         * Handle scene form submission (create or update scene)
+         */
+        function handleSceneFormSubmit(event) {
+            event.preventDefault();
+            
+            const sceneId = document.getElementById('scene-id').value.trim();
+            const sceneTitle = document.getElementById('scene-title').value.trim();
+            const panoramaPath = document.getElementById('panorama-path').value.trim();
+            
+            // Validation
+            if (!sceneId || !sceneTitle || !panoramaPath) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            // Check for scene ID conflicts (only when creating new scene)
+            if (!appState.editingSceneId && tourData.scenes[sceneId]) {
+                alert('Scene ID already exists! Please choose a unique ID.');
+                return;
+            }
+            
+            // Determine coordinates
+            let coordinates;
+            if (appState.editingSceneId) {
+                // Keep existing coordinates when editing
+                coordinates = tourData.scenes[appState.editingSceneId].map;
+            } else {
+                // Use click coordinates for new scene
+                coordinates = appState.clickCoordinates;
+            }
+            
+            if (!coordinates) {
+                alert('Error: Could not determine scene coordinates.');
+                return;
+            }
+            
+            // Create or update scene data
+            tourData.scenes[sceneId] = {
+                "title": sceneTitle,
+                "panorama": panoramaPath,
+                "map": { "x": Math.round(coordinates.x), "y": Math.round(coordinates.y) },
+                "hotSpots": tourData.scenes[sceneId]?.hotSpots || []
+            };
+            
+            // If we were editing and the ID changed, remove the old scene
+            if (appState.editingSceneId && appState.editingSceneId !== sceneId) {
+                delete tourData.scenes[appState.editingSceneId];
+            }
+            
+            // Update UI
+            updateAllUI();
+            closeSceneModal();
+            
+            console.log(`${appState.editingSceneId ? 'Updated' : 'Created'} scene: ${sceneId}`);
+        }
+
+        /**
+         * Handle scene deletion
+         */
+        function handleDeleteScene() {
+            if (!appState.editingSceneId) return;
+            
+            const sceneTitle = tourData.scenes[appState.editingSceneId].title;
+            const confirmDelete = confirm(`Are you sure you want to delete the scene "${sceneTitle}"?\n\nThis action cannot be undone.`);
+            
+            if (confirmDelete) {
+                // Remove scene from tour data
+                delete tourData.scenes[appState.editingSceneId];
+                
+                // If this was the current scene, clear it
+                if (appState.currentSceneId === appState.editingSceneId) {
+                    appState.currentSceneId = null;
+                    clearPannellumViewer();
+                }
+                
+                // Update UI
+                updateAllUI();
+                closeSceneModal();
+                
+                console.log(`Deleted scene: ${appState.editingSceneId}`);
+            }
+        }
+
+        /**
+         * Set up panorama file upload for scene preview
+         */
+        function setupPanoramaUpload() {
+            const fileInput = document.getElementById('panorama-file');
+            const dropZone = document.getElementById('panorama-drop-zone');
+            
+            fileInput.addEventListener('change', handlePanoramaFile);
+            
+            // Drag and drop for panorama files
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    handlePanoramaFile({ target: { files: files } });
+                }
+            });
+        }
+
+        /**
+         * Handle panorama file selection for preview
+         */
+        function handlePanoramaFile(event) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+            
+            // Auto-generate deployment path based on filename
+            const deploymentPath = generateDeploymentPath(file.name);
+            document.getElementById('panorama-path').value = deploymentPath;
+            
+            // Store file for potential use in viewer
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Update drop zone to show file selected
+                const dropZone = document.getElementById('panorama-drop-zone');
+                dropZone.innerHTML = `
+                    <i class="fas fa-check-circle text-2xl text-green-400 mb-2"></i>
+                    <p class="text-green-300 mb-1">Image selected: ${file.name}</p>
+                    <p class="text-blue-300 text-xs mb-2">Auto-generated path: ${deploymentPath}</p>
+                    <button type="button" onclick="document.getElementById('panorama-file').click()" 
+                            class="mt-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
+                        Change Image
+                    </button>
+                `;
+                
+                console.log('Panorama preview image loaded, deployment path:', deploymentPath);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /**
+         * Reset the panorama uploader to its default state
+         */
+        function resetPanoramaUploader() {
+            // Clear the file input
+            const fileInput = document.getElementById('panorama-file');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            
+            // Reset the drop zone to its original state
+            const dropZone = document.getElementById('panorama-drop-zone');
+            if (dropZone) {
+                dropZone.innerHTML = `
+                    <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                    <p class="text-gray-300 mb-1">Drop 360° image here or click to browse</p>
+                    <input type="file" id="panorama-file" accept="image/*" class="hidden">
+                    <button type="button" onclick="document.getElementById('panorama-file').click()" 
+                            class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
+                        Select Image
+                    </button>
+                `;
+                
+                // Re-attach event listeners since we replaced the HTML
+                setupPanoramaUpload();
+            }
+            
+            // Clear the panorama path field
+            const panoramaPath = document.getElementById('panorama-path');
+            if (panoramaPath) {
+                panoramaPath.value = '';
+                panoramaPath.placeholder = 'Auto-generated based on filename...';
+            }
+        }
+
+        /**
+         * Generate deployment path based on filename
+         * Automatically detects floor level and places in correct directory
+         */
+        function generateDeploymentPath(filename) {
+            const cleanName = filename.toLowerCase();
+            
+            // Detect floor level from filename
+            let floorLevel = 'floor1'; // default
+            
+            if (cleanName.includes('floor2') || cleanName.includes('2nd') || cleanName.includes('second')) {
+                floorLevel = 'floor2';
+            } else if (cleanName.includes('floor1') || cleanName.includes('1st') || cleanName.includes('first')) {
+                floorLevel = 'floor1';
+            } else if (cleanName.includes('ground') || cleanName.includes('main') || cleanName.includes('entrance')) {
+                floorLevel = 'floor1';
+            } else if (cleanName.includes('upper') || cleanName.includes('top') || cleanName.includes('lab')) {
+                floorLevel = 'floor2';
+            }
+            
+            // Generate the final path
+            return `images/${floorLevel}/${filename}`;
+        }
+
+        // ===========================
+        // PANNELLUM VIEWER MANAGEMENT  
+        // ===========================
+        
+        /**
+         * Initialize the Pannellum viewer (empty state)
+         */
+        function initializePannellumViewer() {
+            // The viewer will be initialized when a scene is loaded
+            clearPannellumViewer();
+        }
+
+        /**
+         * Load a scene into the Pannellum viewer
+         */
+        function loadSceneInViewer(sceneId) {
+            if (!tourData.scenes[sceneId]) {
+                console.error('Scene not found:', sceneId);
+                return;
+            }
+            
+            const scene = tourData.scenes[sceneId];
+            appState.currentSceneId = sceneId;
+            
+            // Destroy existing viewer if any
+            if (appState.viewer) {
+                appState.viewer.destroy();
+                appState.viewer = null;
+            }
+            
+            // Hide empty state
+            document.getElementById('viewer-empty-state').style.display = 'none';
+            
+            // Check if panorama path exists or use development mode
+            const isDevelopmentPath = scene.panorama.startsWith('images/');
+            
+            if (isDevelopmentPath) {
+                // Development mode - show placeholder and enable hotspot functionality
+                const viewerEl = document.getElementById('panorama-viewer');
+                viewerEl.innerHTML = `
+                    <div class="flex items-center justify-center h-full bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg">
+                        <div class="text-center p-8">
+                            <i class="fas fa-image text-6xl text-gray-500 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-white mb-2">Development Mode</h3>
+                            <p class="text-gray-300 mb-4">Scene: ${scene.title}</p>
+                            <p class="text-gray-400 text-sm mb-4">Image path: ${scene.panorama}</p>
+                            <p class="text-blue-300 text-sm">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Click anywhere to add hotspots (coordinates will be simulated)
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                // Set up click handler for development mode
+                viewerEl.onclick = function(e) {
+                    if (appState.hotspotMode) {
+                        const rect = viewerEl.getBoundingClientRect();
+                        const yaw = ((e.clientX - rect.left) / rect.width) * 360 - 180; // Convert to yaw
+                        const pitch = ((e.clientY - rect.top) / rect.height) * 180 - 90;   // Convert to pitch
+                        
+                        console.log(`Development mode hotspot click at yaw: ${yaw.toFixed(2)}, pitch: ${pitch.toFixed(2)}`);
+                        handleHotspotClick({ yaw, pitch });
+                    }
+                };
+                
+                // Enable hotspot mode button
+                const hotspotBtn = document.getElementById('add-hotspot-mode');
+                if (hotspotBtn) {
+                    hotspotBtn.disabled = false;
+                }
+                
+                console.log(`Loaded scene in development mode: ${sceneId}`);
+                
+            } else {
+                // Production mode - try to load actual panorama
+                const config = {
+                    "type": "equirectangular",
+                    "panorama": scene.panorama,
+                    "autoLoad": true,
+                    "pitch": 0,
+                    "yaw": 0,
+                    "hfov": 100
+                };
+                
+                try {
+                    // Initialize Pannellum viewer
+                    appState.viewer = pannellum.viewer('panorama-viewer', config);
+                    
+                    // Set up hotspot click handler
+                    setupHotspotClickHandler();
+                    
+                    // Set up mouse tracking for coordinates
+                    setupMouseTracking();
+                    
+                    // Enable hotspot mode button
+                    const hotspotBtn = document.getElementById('add-hotspot-mode');
+                    if (hotspotBtn) {
+                        hotspotBtn.disabled = false;
+                    }
+                    
+                    console.log(`Loaded scene in viewer: ${sceneId}`);
+                } catch (error) {
+                    console.error('Error loading scene in viewer:', error);
+                    
+                    // Fallback to development mode
+                    const viewerEl = document.getElementById('panorama-viewer');
+                    viewerEl.innerHTML = `
+                        <div class="flex items-center justify-center h-full bg-red-900 bg-opacity-20 border-2 border-red-600 rounded-lg">
+                            <div class="text-center p-8">
+                                <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+                                <h3 class="text-xl font-semibold text-white mb-2">Image Load Error</h3>
+                                <p class="text-red-300 mb-4">Could not load: ${scene.panorama}</p>
+                                <p class="text-gray-400 text-sm">Hotspot mode is still available for testing</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Enable hotspot mode button even on error
+                    const hotspotBtn = document.getElementById('add-hotspot-mode');
+                    if (hotspotBtn) {
+                        hotspotBtn.disabled = false;
+                    }
+                }
+            }
+            
+            // Update UI to reflect current scene
+            updateAllUI();
+        }
+
+        /**
+         * Clear the Pannellum viewer and show empty state
+         */
+        function clearPannellumViewer() {
+            if (appState.viewer) {
+                appState.viewer.destroy();
+                appState.viewer = null;
+            }
+            
+            appState.currentSceneId = null;
+            appState.hotspotMode = false;
+            
+            // Show empty state
+            document.getElementById('viewer-empty-state').style.display = 'flex';
+            
+            // Disable hotspot mode
+            const hotspotBtn = document.getElementById('add-hotspot-mode');
+            if (hotspotBtn) {
+                hotspotBtn.disabled = true;
+            }
+            
+            updateAllUI();
+        }
+
+        // ===========================
+        // HOTSPOT MANAGEMENT
+        // ===========================
+        
+        /**
+         * Toggle hotspot adding mode
+         */
+        function toggleHotspotMode() {
+            if (!appState.currentSceneId) {
+                return;
+            }
+            
+            appState.hotspotMode = !appState.hotspotMode;
+            
+            const button = document.getElementById('add-hotspot-mode');
+            const buttonText = document.getElementById('hotspot-button-text');
+            const viewer = document.getElementById('panorama-viewer');
+            const coordsDisplay = document.getElementById('coordinates-display');
+            const statusDisplay = document.getElementById('interaction-status');
+            
+            if (appState.hotspotMode) {
+                button.className = button.className.replace('bg-blue-600 hover:bg-blue-700', 'bg-red-600 hover:bg-red-700');
+                buttonText.textContent = 'Stop Adding';
+                viewer.classList.add('hotspot-mode');
+                coordsDisplay.classList.remove('hidden');
+                statusDisplay.textContent = 'Click on the panorama to add navigation hotspots';
+            } else {
+                button.className = button.className.replace('bg-red-600 hover:bg-red-700', 'bg-blue-600 hover:bg-blue-700');
+                buttonText.textContent = 'Add Hotspots';
+                viewer.classList.remove('hotspot-mode');
+                coordsDisplay.classList.add('hidden');
+                statusDisplay.textContent = 'Use controls to navigate the panorama';
+            }
+        }
+
+        /**
+         * Set up hotspot click handler for the panorama viewer
+         */
+        function setupHotspotClickHandler() {
+            const viewerElement = document.getElementById('panorama-viewer');
+            
+            viewerElement.addEventListener('mousedown', function(event) {
+                if (!appState.hotspotMode || !appState.viewer || !appState.currentSceneId) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                try {
+                    // Get pitch and yaw coordinates from click
+                    const coords = appState.viewer.mouseEventToCoords(event);
+                    if (!coords || coords.length < 2) {
+                        console.error('Could not get coordinates from click');
+                        return;
+                    }
+                    
+                    const pitch = coords[0];
+                    const yaw = coords[1];
+                    
+                    // Use common hotspot handler
+                    handleHotspotClick({ pitch, yaw });
+                    
+                } catch (error) {
+                    console.error('Error adding hotspot:', error);
+                    alert('Error adding hotspot. Please try again.');
+                }
+            });
+        }
+
+        /**
+         * Handle hotspot click with coordinates (works for both Pannellum and development mode)
+         */
+        function handleHotspotClick(coords) {
+            if (!appState.currentSceneId) {
+                showMessage('No scene selected!', 'error');
+                return;
+            }
+            
+            // Get available destination scenes
+            const availableScenes = Object.keys(tourData.scenes)
+                .filter(id => id !== appState.currentSceneId);
+            
+            if (availableScenes.length === 0) {
+                showMessage('No destination scenes available! Create more scenes first.', 'warning');
+                return;
+            }
+            
+            // Store coordinates for later use
+            appState.pendingHotspotCoords = coords;
+            
+            // Open hotspot modal
+            openHotspotModal(availableScenes);
+        }
+
+        /**
+         * Open the hotspot modal with available destination scenes
+         */
+        function openHotspotModal(availableScenes) {
+            const modal = document.getElementById('hotspot-modal');
+            const destinationSelect = document.getElementById('hotspot-destination');
+            const pitchSpan = document.getElementById('hotspot-pitch');
+            const yawSpan = document.getElementById('hotspot-yaw');
+            const textInput = document.getElementById('hotspot-text');
+            
+            // Populate destination scene dropdown
+            destinationSelect.innerHTML = '<option value="">Select destination scene...</option>';
+            availableScenes.forEach(sceneId => {
+                const scene = tourData.scenes[sceneId];
+                const option = document.createElement('option');
+                option.value = sceneId;
+                option.textContent = `${scene.title} (${sceneId})`;
+                destinationSelect.appendChild(option);
+            });
+            
+            // Display coordinates
+            const coords = appState.pendingHotspotCoords;
+            pitchSpan.textContent = coords.pitch.toFixed(1);
+            yawSpan.textContent = coords.yaw.toFixed(1);
+            
+            // Clear previous text
+            textInput.value = '';
+            
+            // Auto-suggest text when destination changes
+            destinationSelect.addEventListener('change', function() {
+                if (this.value) {
+                    const selectedScene = tourData.scenes[this.value];
+                    textInput.value = `Go to ${selectedScene.title}`;
+                }
+            });
+            
+            modal.showModal();
+        }
+
+        /**
+         * Close the hotspot modal and clean up
+         */
+        function closeHotspotModal() {
+            const modal = document.getElementById('hotspot-modal');
+            modal.close();
+            
+            // Clear pending coordinates
+            appState.pendingHotspotCoords = null;
+            
+            // Reset form
+            document.getElementById('hotspot-form').reset();
+            
+            // Fix mouse sticking issue - exit hotspot mode after adding
+            if (appState.hotspotMode) {
+                toggleHotspotMode();
+                showMessage('Hotspot mode disabled. Click "Add Hotspots" to add more.', 'info');
+            }
+        }
+
+        /**
+         * Handle hotspot form submission
+         */
+        function handleHotspotFormSubmit(event) {
+            event.preventDefault();
+            
+            const destinationSceneId = document.getElementById('hotspot-destination').value;
+            const hotspotText = document.getElementById('hotspot-text').value.trim();
+            
+            if (!destinationSceneId || !hotspotText) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+            
+            const coords = appState.pendingHotspotCoords;
+            
+            // Create hotspot object
+            const hotspot = {
+                "pitch": parseFloat(coords.pitch.toFixed(1)),
+                "yaw": parseFloat(coords.yaw.toFixed(1)),
+                "type": "scene",
+                "text": hotspotText,
+                "sceneId": destinationSceneId
+            };
+            
+            // Add to current scene
+            tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
+            
+            // Update UI
+            updateAllUI();
+            
+            // Close modal
+            closeHotspotModal();
+            
+            showMessage(`Added hotspot: "${hotspotText}" -> ${tourData.scenes[destinationSceneId].title}`, 'success');
+            console.log(`Added hotspot: ${hotspotText} -> ${destinationSceneId} at pitch:${coords.pitch.toFixed(1)}, yaw:${coords.yaw.toFixed(1)}`);
+        }
+
+        /**
+         * Set up mouse coordinate tracking for the panorama viewer
+         */
+        function setupMouseTracking() {
+            const viewerElement = document.getElementById('panorama-viewer');
+            const pitchSpan = document.getElementById('current-pitch');
+            const yawSpan = document.getElementById('current-yaw');
+            
+            viewerElement.addEventListener('mousemove', function(event) {
+                if (appState.hotspotMode && appState.viewer) {
+                    try {
+                        const coords = appState.viewer.mouseEventToCoords(event);
+                        if (coords && coords.length >= 2) {
+                            pitchSpan.textContent = coords[0].toFixed(1);
+                            yawSpan.textContent = coords[1].toFixed(1);
+                        }
+                    } catch (e) {
+                        // Ignore coordinate calculation errors
+                    }
+                }
+            });
+        }
+
+        // ===========================
+        // UI UPDATE FUNCTIONS
+        // ===========================
+        
+        /**
+         * Update all UI elements to reflect current application state
+         */
+        function updateAllUI() {
+            updateScenesList();
+            updateFirstSceneOptions();
+            updateHeaderStats();
+            updateCurrentSceneDisplay();
+            updateJsonOutput();
+            
+            // Only draw floor plan if canvas is initialized
+            if (appState.canvas && appState.ctx) {
+                drawFloorPlan(); // Redraw canvas with updated markers
+            }
+        }
+
+        /**
+         * Update the scenes list in the left panel
+         */
+        function updateScenesList() {
+            const sceneList = document.getElementById('scene-list');
+            const sceneCount = document.getElementById('scene-count');
+            
+            const sceneIds = Object.keys(tourData.scenes);
+            sceneCount.textContent = sceneIds.length;
+            
+            if (sceneIds.length === 0) {
+                sceneList.innerHTML = `
+                    <div class="text-gray-500 text-sm italic text-center py-8">
+                        <i class="fas fa-plus-circle text-2xl mb-2"></i>
+                        <p>No scenes created yet</p>
+                        <p class="text-xs">Click on the floor plan to add your first scene</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            sceneList.innerHTML = sceneIds.map(sceneId => {
+                const scene = tourData.scenes[sceneId];
+                const hotspotCount = scene.hotSpots ? scene.hotSpots.length : 0;
+                const isActive = sceneId === appState.currentSceneId;
+                
+                return `
+                    <div class="scene-item p-3 bg-gray-700 border border-gray-600 rounded-lg ${
+                        isActive ? 'active' : ''
+                    }" onclick="loadSceneInViewer('${sceneId}')">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="font-medium text-white">${scene.title}</div>
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                                    ${hotspotCount} hotspots
+                                </span>
+                                <button onclick="event.stopPropagation(); openSceneModal('${sceneId}')" 
+                                        class="text-gray-400 hover:text-white transition-colors">
+                                    <i class="fas fa-edit text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            ID: <code class="bg-gray-800 px-1 rounded">${sceneId}</code>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            Coordinates: (${scene.map.x}, ${scene.map.y})
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Update the first scene dropdown options
+         */
+        function updateFirstSceneOptions() {
+            const select = document.getElementById('first-scene-select');
+            const currentValue = select.value;
+            
+            const options = ['<option value="">Choose first scene...</option>'];
+            Object.keys(tourData.scenes).forEach(sceneId => {
+                const scene = tourData.scenes[sceneId];
+                options.push(`<option value="${sceneId}">${scene.title} (${sceneId})</option>`);
+            });
+            
+            select.innerHTML = options.join('');
+            
+            // Restore selection if still valid
+            if (currentValue && tourData.scenes[currentValue]) {
+                select.value = currentValue;
+                tourData.default.firstScene = currentValue;
+            }
+        }
+
+        /**
+         * Update header statistics
+         */
+        function updateHeaderStats() {
+            const sceneCount = Object.keys(tourData.scenes).length;
+            const hotspotCount = Object.values(tourData.scenes)
+                .reduce((total, scene) => total + (scene.hotSpots?.length || 0), 0);
+            
+            document.getElementById('header-scene-count').textContent = sceneCount;
+            document.getElementById('header-hotspot-count').textContent = hotspotCount;
+        }
+
+        /**
+         * Update current scene display in center panel
+         */
+        function updateCurrentSceneDisplay() {
+            const display = document.getElementById('current-scene-display');
+            const hotspotDisplay = document.getElementById('current-scene-hotspots');
+            
+            if (appState.currentSceneId && tourData.scenes[appState.currentSceneId]) {
+                const scene = tourData.scenes[appState.currentSceneId];
+                display.textContent = `${scene.title} (${appState.currentSceneId})`;
+                hotspotDisplay.textContent = scene.hotSpots?.length || 0;
+            } else {
+                display.textContent = 'None';
+                hotspotDisplay.textContent = '0';
+            }
+        }
+
+        // ===========================
+        // PANNELLUM VIEWER MANAGEMENT
+        // ===========================
+        
+        /**
+         * Load a scene's panorama into the Pannellum viewer
+         */
+        function loadSceneInViewer(sceneId) {
+            if (!tourData.scenes[sceneId]) return;
+            
+            const scene = tourData.scenes[sceneId];
+            appState.currentSceneId = sceneId;
+            
+            // Hide empty state
+            document.getElementById('viewer-empty-state').style.display = 'none';
+            
+            // Initialize or update viewer
+            if (appState.viewer) {
+                appState.viewer.destroy();
+            }
+            
+            // Create viewer configuration
+            const viewerConfig = {
+                "type": "equirectangular",
+                "panorama": scene.panorama,
+                "autoLoad": true,
+                "pitch": 0,
+                "yaw": 0,
+                "hfov": 100
+            };
+            
+            // Initialize Pannellum viewer
+            appState.viewer = pannellum.viewer('panorama-viewer', viewerConfig);
+            
+            // Set up mouse tracking for coordinates display
+            setupMouseTracking();
+            
+            // Set up hotspot click handling
+            setupHotspotClickHandling();
+            
+            // Enable hotspot adding button
+            const hotspotBtn = document.getElementById('add-hotspot-mode');
+            if (hotspotBtn) {
+                hotspotBtn.disabled = false;
+            }
+            
+            // Update scenes list to show active scene
+            updateScenesList();
+            
+            // Redraw canvas markers to highlight current scene
+            drawFloorPlan();
+            
+            console.log(`Loaded scene: ${sceneId}`);
+        }
+
+        /**
+         * Set up mouse coordinate tracking over the panorama viewer
+         */
+        function setupMouseTracking() {
+            const viewerElement = document.getElementById('panorama-viewer');
+            const coordsDisplay = document.getElementById('coordinates-display');
+            const pitchSpan = document.getElementById('current-pitch');
+            const yawSpan = document.getElementById('current-yaw');
+            
+            viewerElement.addEventListener('mousemove', function(event) {
+                if (appState.addingHotspotsMode && appState.viewer) {
+                    try {
+                        const coords = appState.viewer.mouseEventToCoords(event);
+                        if (coords && coords.length >= 2) {
+                            pitchSpan.textContent = coords[0].toFixed(1);
+                            yawSpan.textContent = coords[1].toFixed(1);
+                        }
+                    } catch (e) {
+                        // Ignore coordinate calculation errors
+                    }
+                }
+            });
+        }
+
+        /**
+         * Set up click handling for adding hotspots to the panorama
+         */
+        function setupHotspotClickHandling() {
+            const viewerElement = document.getElementById('panorama-viewer');
+            
+            viewerElement.addEventListener('mousedown', function(event) {
+                if (!appState.addingHotspotsMode || !appState.viewer) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                try {
+                    // Get pitch and yaw coordinates from click
+                    const coords = appState.viewer.mouseEventToCoords(event);
+                    if (!coords || coords.length < 2) return;
+                    
+                    const pitch = coords[0];
+                    const yaw = coords[1];
+                    
+                    // Get available destination scenes (excluding current scene)
+                    const availableScenes = Object.keys(tourData.scenes)
+                        .filter(id => id !== appState.currentSceneId);
+                    
+                    if (availableScenes.length === 0) {
+                        alert('No other scenes available! Add more scenes first.');
+                        return;
+                    }
+                    
+                    // Create destination scene selection
+                    const sceneOptions = availableScenes.map(sceneId => 
+                        `${sceneId}: ${tourData.scenes[sceneId].title}`
+                    ).join('\\n');
+                    
+                    const destinationScene = prompt(
+                        `Select destination scene for this hotspot:\\n\\n${sceneOptions}\\n\\nEnter Scene ID:`
+                    );
+                    
+                    if (!destinationScene || !tourData.scenes[destinationScene]) {
+                        alert('Invalid scene ID!');
+                        return;
+                    }
+                    
+                    const hotspotText = prompt('Enter hotspot text:', `Go to ${tourData.scenes[destinationScene].title}`);
+                    if (!hotspotText) return;
+                    
+                    // Add hotspot to current scene
+                    const hotspot = {
+                        "pitch": parseFloat(pitch.toFixed(1)),
+                        "yaw": parseFloat(yaw.toFixed(1)),
+                        "type": "scene",
+                        "text": hotspotText,
+                        "sceneId": destinationScene
+                    };
+                    
+                    tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
+                    
+                    // Update UI
+                    updateScenesList();
+                    updateJsonOutput();
+                    
+                    console.log(`Added hotspot at pitch: ${pitch}, yaw: ${yaw} to scene: ${destinationScene}`);
+                    
+                } catch (error) {
+                    console.error('Error adding hotspot:', error);
+                    alert('Error adding hotspot. Please try again.');
+                }
+            });
+        }
+
+        // ===========================
+        // HOTSPOT MANAGEMENT
+        // ===========================
+        
+        /**
+         * Toggle hotspot adding mode
+         */
+        function toggleAddHotspotsMode() {
+            if (!appState.currentSceneId) return;
+            
+            appState.addingHotspotsMode = !appState.addingHotspotsMode;
+            
+            const button = document.getElementById('toggle-add-hotspots');
+            const viewer = document.getElementById('panorama-viewer');
+            const coordsDisplay = document.getElementById('coordinates-display');
+            
+            if (appState.addingHotspotsMode) {
+                button.innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Adding Hotspots';
+                button.className = button.className.replace('bg-blue-600 hover:bg-blue-700', 'bg-red-600 hover:bg-red-700');
+                viewer.classList.add('adding-hotspots');
+                coordsDisplay.classList.remove('hidden');
+            } else {
+                button.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Start Adding Hotspots';
+                button.className = button.className.replace('bg-red-600 hover:bg-red-700', 'bg-blue-600 hover:bg-blue-700');
+                viewer.classList.remove('adding-hotspots');
+                coordsDisplay.classList.add('hidden');
+            }
+        }
+
+        // ===========================
+        // TOUR SETTINGS
+        // ===========================
+        
+        /**
+         * Update the first scene setting
+         */
+        function updateFirstScene() {
+            const select = document.getElementById('first-scene-select');
+            tourData.default.firstScene = select.value;
+            updateJsonOutput();
+        }
+
+        /**
+         * Update the fade duration setting
+         */
+        function updateFadeDuration() {
+            const input = document.getElementById('fade-duration');
+            tourData.default.sceneFadeDuration = parseInt(input.value) || 1000;
+            updateJsonOutput();
+        }
+
+        // ===========================
+        // JSON MANAGEMENT FUNCTIONS
+        // ===========================
+        
+        /**
+         * Update the JSON output display
+         */
+        function updateJsonOutput() {
+            const pre = document.getElementById('json-output');
+            
+            // Create clean tour data (remove scenes without panoramas)
+            const cleanTourData = {
+                ...tourData,
+                scenes: Object.fromEntries(
+                    Object.entries(tourData.scenes).filter(([_, scene]) => scene.panorama)
+                )
+            };
+            
+            const jsonString = JSON.stringify(cleanTourData, null, 2);
+            
+            // Add syntax highlighting for better readability
+            const highlighted = jsonString
+                .replace(/(".*?")\s*:/g, '<span class="text-blue-300">$1</span>:')
+                .replace(/:\s*"([^"]*?)"/g, ': <span class="text-green-300">"$1"</span>')
+                .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span class="text-yellow-300">$1</span>')
+                .replace(/:\s*(true|false)/g, ': <span class="text-red-300">$1</span>')
+                .replace(/:\s*null/g, ': <span class="text-gray-400">null</span>');
+            
+            pre.innerHTML = highlighted;
+        }
+
+        /**
+         * Export the current configuration as JSON
+         */
+        function exportConfiguration() {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const filename = `tour-config-${timestamp}.json`;
+            
+            // Create clean tour data
+            const cleanTourData = {
+                ...tourData,
+                scenes: Object.fromEntries(
+                    Object.entries(tourData.scenes).filter(([_, scene]) => scene.panorama)
+                )
+            };
+            
+            const jsonString = JSON.stringify(cleanTourData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showMessage(`Configuration exported as ${filename}`, 'success');
+        }
+
+        /**
+         * Import a configuration from JSON file
+         */
+        function importConfiguration() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        try {
+                            const imported = JSON.parse(event.target.result);
+                            if (validateTourData(imported)) {
+                                if (confirm('This will replace your current configuration. Continue?')) {
+                                    tourData = imported;
+                                    appState.currentSceneId = null;
+                                    appState.hotspotMode = false;
+                                    updateAllUI();
+                                    showMessage('Configuration imported successfully!', 'success');
+                                }
+                            } else {
+                                showMessage('Invalid configuration file format', 'error');
+                            }
+                        } catch (error) {
+                            showMessage('Error parsing JSON file: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            
+            input.click();
+        }
+
+        /**
+         * Validate tour data structure
+         */
+        function validateTourData(data) {
+            try {
+                return data && 
+                       typeof data === 'object' && 
+                       data.scenes && 
+                       typeof data.scenes === 'object' &&
+                       data.default &&
+                       typeof data.default === 'object';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        /**
+         * Copy configuration to clipboard
+         */
+        function copyToClipboard() {
+            // Create clean tour data
+            const cleanTourData = {
+                ...tourData,
+                scenes: Object.fromEntries(
+                    Object.entries(tourData.scenes).filter(([_, scene]) => scene.panorama)
+                )
+            };
+            
+            const jsonString = JSON.stringify(cleanTourData, null, 2);
+            
+            navigator.clipboard.writeText(jsonString).then(() => {
+                showMessage('Configuration copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = jsonString;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showMessage('Configuration copied to clipboard!', 'success');
+                } catch (e) {
+                    showMessage('Failed to copy to clipboard', 'error');
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            });
+        }
+
+        /**
+         * Reset configuration to default state
+         */
+        function resetConfiguration() {
+            if (confirm('This will delete all scenes and hotspots. Are you sure?')) {
+                tourData = {
+                    default: {
+                        firstScene: '',
+                        author: 'Virtual Tour Creator',
+                        title: '360° Virtual Tour',
+                        autoLoad: true,
+                        sceneFadeDuration: 1000
+                    },
+                    scenes: {}
+                };
+                appState.currentSceneId = null;
+                appState.hotspotMode = false;
+                updateAllUI();
+                showMessage('Configuration reset to defaults', 'info');
+            }
+        }
+
+        // ===========================
+        // UTILITY FUNCTIONS
+        // ===========================
+        
+        /**
+         * Show a temporary message to the user
+         */
+        function showMessage(message, type = 'info') {
+            // Create message element
+            const messageEl = document.createElement('div');
+            messageEl.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 text-white font-medium`;
+            
+            // Set colors based on type
+            switch (type) {
+                case 'success':
+                    messageEl.className += ' bg-green-600';
+                    break;
+                case 'error':
+                    messageEl.className += ' bg-red-600';
+                    break;
+                case 'warning':
+                    messageEl.className += ' bg-yellow-600';
+                    break;
+                default:
+                    messageEl.className += ' bg-blue-600';
+            }
+            
+            messageEl.textContent = message;
+            document.body.appendChild(messageEl);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.parentNode.removeChild(messageEl);
+                }
+            }, 3000);
+        }
+
+        /**
+         * Generate a simple scene ID from a title
+         */
+        function generateSceneId(title) {
+            return title.toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+
+        /**
+         * Show helper dialog for image path format
+         */
+        function showImagePathHelper() {
+            const message = `
+🎯 Automated Image Path System
+
+✅ FLOOR 1 Detection (images/floor1/):
+• Keywords: floor1, 1st, first, ground, main, entrance
+• Examples: "entrance-hall.jpg", "main-lobby-floor1.jpg"
+
+✅ FLOOR 2 Detection (images/floor2/):
+• Keywords: floor2, 2nd, second, upper, top, lab
+• Examples: "lab-room-floor2.jpg", "second-floor-hall.jpg"
+
+🔧 Auto-Generated Paths:
+• "entrance-hall.jpg" → "images/floor1/entrance-hall.jpg"
+• "lab-room-floor2.jpg" → "images/floor2/lab-room-floor2.jpg"
+
+📁 Final Website Structure:
+/your-website/
+  ├── images/
+  │   ├── floor1/ ← Ground floor images
+  │   └── floor2/ ← Upper floor images
+  └── index.html
+
+💡 The system automatically detects the floor from your filename!
+            `;
+            
+            alert(message);
+        }
+
+        /**
+         * Initialize the configurator application
+         */
+        function initializeConfigurator() {
+            // Initialize canvas
+            appState.canvas = document.getElementById('minimap-canvas');
+            if (appState.canvas) {
+                appState.ctx = appState.canvas.getContext('2d');
+            } else {
+                console.error('Canvas element not found');
+                return;
+            }
+            
+            // Set up event handlers
+            setupFloorPlanUpload();
+            setupSceneModal();
+            setupHotspotClickHandler();
+            setupMouseTracking();
+            
+            // Initial UI update
+            updateAllUI();
+            
+            // Show welcome message
+            showMessage('Welcome to the 360° Tour Configurator! Start by uploading a floor plan.', 'info');
+            
+            console.log('Configurator initialized successfully');
+        }
+
+        // ===========================
+        // INITIALIZATION AND GLOBAL EXPORTS
+        // ===========================
+        
+        /**
+         * Initialize the configurator when the page loads
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeConfigurator();
+        });
+
+        // Expose functions to global scope for HTML onclick handlers
+        window.loadSceneInViewer = loadSceneInViewer;
+        window.showImagePathHelper = showImagePathHelper;
+        window.openSceneModal = openSceneModal;
+        window.openHotspotModal = openHotspotModal;
+        window.closeHotspotModal = closeHotspotModal;
+        window.updateFirstScene = updateFirstScene;
+        window.updateFadeDuration = updateFadeDuration;
+        window.exportConfiguration = exportConfiguration;
+        window.importConfiguration = importConfiguration;
+        window.copyToClipboard = copyToClipboard;
+        window.resetConfiguration = resetConfiguration;
+        window.toggleHotspotMode = toggleHotspotMode;
+        window.generateDeploymentPath = generateDeploymentPath;
+    </script>
+</body>
+</html>
