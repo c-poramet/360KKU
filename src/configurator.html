@@ -1241,12 +1241,16 @@
                     // Initialize Pannellum viewer
                     appState.viewer = pannellum.viewer('panorama-viewer', config);
                     
+                    // Flag to track if load event fired
+                    let loadEventFired = false;
+                    
                     // Remove any previous load event listeners
                     appState.viewer.off('load');
                     
                     // Wait for viewer to fully load before setting up interactions
                     appState.viewer.on('load', function() {
-                        console.log(`✅ Scene loaded successfully: ${sceneId}`);
+                        loadEventFired = true;
+                        console.log(`✅ Scene loaded successfully via 'load' event: ${sceneId}`);
                         console.log(`🔄 Setting up interactions and rendering hotspots...`);
                         
                         // Set up hotspot click handler
@@ -1265,6 +1269,50 @@
                         
                         console.log(`✅ Hotspots rendering complete for scene: ${sceneId}`);
                     });
+                    
+                    // FALLBACK: If load event doesn't fire within 1 second, render anyway
+                    // This handles cases where the panorama is cached
+                    setTimeout(() => {
+                        if (!loadEventFired) {
+                            console.log(`⚠️ Load event didn't fire, using fallback for scene: ${sceneId}`);
+                            
+                            // Set up interactions
+                            setupHotspotClickHandler();
+                            setupMouseTracking();
+                            
+                            // Render hotspots
+                            const currentScene = tourData.scenes[sceneId];
+                            const currentHotspots = currentScene?.hotSpots || [];
+                            console.log(`📍 Fallback: Found ${currentHotspots.length} hotspots for scene: ${sceneId}`);
+                            renderHotspots();
+                            
+                            console.log(`✅ Fallback rendering complete for scene: ${sceneId}`);
+                        }
+                    }, 1000);
+                    
+                    // ADDITIONAL FIX: Keep checking viewer state and force re-render when ready
+                    // This fixes the visibility issue where hotspots exist but aren't visible
+                    let retryCount = 0;
+                    const maxRetries = 10;
+                    const retryInterval = 300;
+                    
+                    const forceRenderWhenReady = () => {
+                        retryCount++;
+                        console.log(`🔄 Attempt ${retryCount}: Checking if viewer is ready for forced re-render...`);
+                        
+                        if (appState.viewer && appState.viewer.isLoaded && appState.viewer.isLoaded()) {
+                            console.log(`✅ Viewer confirmed loaded! Forcing hotspot re-render...`);
+                            setTimeout(() => renderHotspots(), 100);
+                        } else if (retryCount < maxRetries) {
+                            console.log(`⏳ Viewer not ready yet, will retry in ${retryInterval}ms...`);
+                            setTimeout(forceRenderWhenReady, retryInterval);
+                        } else {
+                            console.log(`⚠️ Max retries reached, forcing render anyway...`);
+                            setTimeout(() => renderHotspots(), 100);
+                        }
+                    };
+                    
+                    setTimeout(forceRenderWhenReady, 500);
                     
                     // Also set up error handler
                     appState.viewer.on('error', function(error) {
@@ -1574,6 +1622,12 @@
                 return;
             }
             
+            // Check if viewer rendering container exists
+            const renderContainer = document.querySelector('.pnlm-render-container');
+            if (!renderContainer) {
+                console.warn('⚠️ Pannellum render container not found, viewer may not be fully initialized');
+            }
+            
             console.log(`🎯 Rendering ${hotspots.length} hotspots in Pannellum viewer`);
             
             // Remove ALL existing hotspots more thoroughly
@@ -1662,7 +1716,7 @@
                 console.error('Error verifying hotspots:', e);
             }
             
-            // Check DOM for hotspot elements
+            // Check DOM for hotspot elements AND manually add overlay divs if needed
             setTimeout(() => {
                 const hotspotElements = document.querySelectorAll('.pnlm-hotspot, .hotspot-preview, .pnlm-hotspot-base');
                 console.log(`🔍 DOM Check: Found ${hotspotElements.length} hotspot elements in DOM`);
@@ -1684,10 +1738,70 @@
                 
                 if (hotspotElements.length === 0 && hotspots.length > 0) {
                     console.error('⚠️ WARNING: Hotspots added to config but not visible in DOM!');
+                    console.log('🔧 Attempting to manually inject hotspot overlays...');
+                    injectManualHotspotOverlays(hotspots);
                 }
             }, 500);
             
             console.log(`✅ Successfully rendered ${hotspots.length} hotspots`);
+        }
+
+        /**
+         * Manually inject visible hotspot overlays when Pannellum fails to render them
+         */
+        function injectManualHotspotOverlays(hotspots) {
+            const viewerContainer = document.getElementById('panorama-viewer');
+            if (!viewerContainer || !appState.viewer) {
+                console.error('Cannot inject manual overlays - viewer not found');
+                return;
+            }
+            
+            // Remove any existing manual overlays
+            const existingOverlays = viewerContainer.querySelectorAll('.manual-hotspot-overlay');
+            existingOverlays.forEach(overlay => overlay.remove());
+            
+            console.log(`📌 Injecting ${hotspots.length} manual hotspot overlays...`);
+            
+            hotspots.forEach((hotspot, index) => {
+                // Get screen coordinates from pitch/yaw
+                try {
+                    const coords = appState.viewer.pitchYawToCoords(hotspot.pitch, hotspot.yaw);
+                    
+                    // Create overlay div
+                    const overlay = document.createElement('div');
+                    overlay.className = 'manual-hotspot-overlay';
+                    overlay.style.cssText = `
+                        position: absolute;
+                        left: ${coords[0]}px;
+                        top: ${coords[1]}px;
+                        width: 50px;
+                        height: 50px;
+                        background: red;
+                        border: 5px solid yellow;
+                        border-radius: 50%;
+                        transform: translate(-25px, -25px);
+                        z-index: 999999;
+                        pointer-events: auto;
+                        cursor: pointer;
+                        display: block;
+                        visibility: visible;
+                        opacity: 1;
+                    `;
+                    overlay.title = hotspot.text;
+                    
+                    // Add click handler
+                    overlay.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        console.log(`Manual hotspot clicked: ${hotspot.text} -> ${hotspot.sceneId}`);
+                        alert(`Navigate to: ${hotspot.text}`);
+                    });
+                    
+                    viewerContainer.appendChild(overlay);
+                    console.log(`  ✅ Injected overlay ${index} at screen coords [${coords[0]}, ${coords[1]}]`);
+                } catch (e) {
+                    console.error(`  ❌ Failed to inject overlay ${index}:`, e);
+                }
+            });
         }
 
         /**
