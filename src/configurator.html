@@ -1607,64 +1607,24 @@
                             // Future: navigate to scene
                         },
                         "createTooltipFunc": function(hotSpotDiv) {
-                            // Clear any default content
-                            hotSpotDiv.innerHTML = '';
+                            console.log(`🎨 createTooltipFunc called for hotspot ${index}`);
+                            console.log(`  hotSpotDiv:`, hotSpotDiv);
+                            console.log(`  hotSpotDiv className:`, hotSpotDiv.className);
                             
-                            // Create visible hotspot marker
-                            const marker = document.createElement('div');
-                            marker.style.cssText = `
-                                width: 30px;
-                                height: 30px;
-                                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                                border: 3px solid white;
-                                border-radius: 50%;
-                                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                                cursor: pointer;
-                                position: absolute;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                z-index: 10000;
-                            `;
+                            // SUPER SIMPLE TEST - just make it red and big
+                            hotSpotDiv.style.background = 'red';
+                            hotSpotDiv.style.width = '50px';
+                            hotSpotDiv.style.height = '50px';
+                            hotSpotDiv.style.border = '5px solid yellow';
+                            hotSpotDiv.style.borderRadius = '50%';
+                            hotSpotDiv.style.display = 'block';
+                            hotSpotDiv.style.visibility = 'visible';
+                            hotSpotDiv.style.opacity = '1';
+                            hotSpotDiv.style.position = 'absolute';
+                            hotSpotDiv.style.zIndex = '999999';
                             
-                            // Create label
-                            const label = document.createElement('div');
-                            label.textContent = hotspot.text;
-                            label.style.cssText = `
-                                position: absolute;
-                                top: 40px;
-                                left: 50%;
-                                transform: translateX(-50%);
-                                background: rgba(0, 0, 0, 0.8);
-                                color: white;
-                                padding: 6px 12px;
-                                border-radius: 4px;
-                                font-size: 13px;
-                                white-space: nowrap;
-                                pointer-events: none;
-                                opacity: 0;
-                                transition: opacity 0.2s;
-                                z-index: 10001;
-                            `;
-                            
-                            // Show label on hover
-                            marker.addEventListener('mouseenter', () => {
-                                label.style.opacity = '1';
-                                marker.style.transform = 'translate(-50%, -50%) scale(1.2)';
-                                marker.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-                            });
-                            
-                            marker.addEventListener('mouseleave', () => {
-                                label.style.opacity = '0';
-                                marker.style.transform = 'translate(-50%, -50%) scale(1)';
-                                marker.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
-                            });
-                            
-                            hotSpotDiv.appendChild(marker);
-                            hotSpotDiv.appendChild(label);
-                            hotSpotDiv.classList.add('custom-hotspot');
-                            
-                            console.log(`✅ Hotspot DOM created for: "${hotspot.text}"`);
+                            console.log(`  ✅ Applied aggressive styling to hotSpotDiv`);
+                            console.log(`  Final style:`, hotSpotDiv.style.cssText);
                         }
                     };
                     
@@ -1685,10 +1645,22 @@
             
             // Check DOM for hotspot elements
             setTimeout(() => {
-                const hotspotElements = document.querySelectorAll('.pnlm-hotspot, .hotspot-preview');
+                const hotspotElements = document.querySelectorAll('.pnlm-hotspot, .hotspot-preview, .pnlm-hotspot-base');
                 console.log(`🔍 DOM Check: Found ${hotspotElements.length} hotspot elements in DOM`);
                 hotspotElements.forEach((el, idx) => {
                     console.log(`  Hotspot ${idx}:`, el.className, 'Style:', el.style.cssText);
+                    console.log(`  Inner HTML:`, el.innerHTML);
+                    console.log(`  Children:`, el.children.length);
+                    
+                    // Force visibility
+                    el.style.display = 'block';
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '1';
+                    el.style.background = 'red';
+                    el.style.width = '50px';
+                    el.style.height = '50px';
+                    el.style.border = '5px solid yellow';
+                    console.log(`  🎨 Forced styling on hotspot ${idx}`);
                 });
                 
                 if (hotspotElements.length === 0 && hotspots.length > 0) {
