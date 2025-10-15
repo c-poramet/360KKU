@@ -38,69 +38,85 @@
             transform: rotate(45deg) translate(100%, 100%);
         }
         
-        /* Glow effects with #A73B24 color scheme */
+        /* Subtle glow effects for better readability */
+        .red-glow {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(167, 59, 36, 0.3);
+        }
+        
         .red-glow:hover {
+            background: rgba(255,255,255,0.12);
             box-shadow: 
-                0 20px 40px rgba(0,0,0,0.4),
-                0 0 20px rgba(167, 59, 36, 0.6),
-                0 0 40px rgba(167, 59, 36, 0.3),
-                inset 0 1px 0 rgba(255,255,255,0.2);
-            border-color: rgba(167, 59, 36, 0.7);
+                0 20px 40px rgba(0,0,0,0.6),
+                0 0 20px rgba(167, 59, 36, 0.4),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+            border-color: rgba(167, 59, 36, 0.6);
+        }
+        
+        .orange-glow {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(194, 65, 12, 0.3);
         }
         
         .orange-glow:hover {
+            background: rgba(255,255,255,0.12);
             box-shadow: 
-                0 20px 40px rgba(0,0,0,0.4),
-                0 0 20px rgba(234, 88, 12, 0.5),
-                0 0 40px rgba(234, 88, 12, 0.25),
-                inset 0 1px 0 rgba(255,255,255,0.2);
-            border-color: rgba(234, 88, 12, 0.6);
+                0 20px 40px rgba(0,0,0,0.6),
+                0 0 20px rgba(194, 65, 12, 0.4),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+            border-color: rgba(194, 65, 12, 0.6);
+        }
+        
+        .amber-glow {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(180, 83, 9, 0.3);
         }
         
         .amber-glow:hover {
+            background: rgba(255,255,255,0.12);
             box-shadow: 
-                0 20px 40px rgba(0,0,0,0.4),
-                0 0 20px rgba(245, 158, 11, 0.5),
-                0 0 40px rgba(245, 158, 11, 0.25),
-                inset 0 1px 0 rgba(255,255,255,0.2);
-            border-color: rgba(245, 158, 11, 0.6);
+                0 20px 40px rgba(0,0,0,0.6),
+                0 0 20px rgba(180, 83, 9, 0.4),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+            border-color: rgba(180, 83, 9, 0.6);
         }
         
-        /* Icon animations */
+        /* Enhanced icon styling for better visibility */
         .feature-icon {
             transition: all 0.3s ease;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem auto;
         }
         
         .feature-card:hover .feature-icon {
-            transform: scale(1.2) rotate(5deg);
-            filter: drop-shadow(0 0 10px currentColor);
+            transform: scale(1.1);
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
         
-        /* Pulsing animation for icons */
-        @keyframes pulse-glow {
-            0%, 100% { 
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% { 
-                opacity: 0.8;
-                transform: scale(1.05);
-            }
+        /* Remove overly complex animations, keep it clean */
+        
+        /* Improved text contrast and readability */
+        .feature-card .feature-title {
+            transition: all 0.3s ease;
+            color: #f1f5f9;
+            font-weight: 600;
         }
         
-        .feature-card:hover .feature-icon {
-            animation: pulse-glow 2s infinite;
-        }
-        
-        /* Text animations */
-        .feature-card .feature-title,
         .feature-card .feature-text {
             transition: all 0.3s ease;
+            color: #cbd5e1;
+            line-height: 1.6;
         }
         
         .feature-card:hover .feature-title {
             color: #ffffff;
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
         
         .feature-card:hover .feature-text {
@@ -108,7 +124,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d1b1b 25%, #A73B24 50%, #8B2635 75%, #1a1a1a 100%)">
+<body class="min-h-screen" style="background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 30%, #2a1f1f 60%, #1a1a1a 100%)">
     <!-- Navigation -->
     <nav class="p-6">
         <div class="container mx-auto">
@@ -126,7 +142,7 @@
             <div class="mb-12">
                                 <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                     Explore in 
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-400 to-amber-400">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-orange-400 to-red-400">
                         360°
                     </span>
                 </h1>
@@ -138,38 +154,39 @@
 
             <!-- Features Grid -->
             <div class="grid md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
-                <div class="feature-card red-glow bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 cursor-pointer">
-                    <div class="feature-icon text-4xl mb-4" style="color: #A73B24;">
+                <div class="feature-card red-glow backdrop-blur-sm rounded-xl p-8 cursor-pointer">
+                    <div class="feature-icon text-3xl" style="color: #D2691E;">
                         <i class="fas fa-street-view"></i>
                     </div>
-                    <h3 class="feature-title text-xl font-semibold text-white mb-2">Street View Style</h3>
-                    <p class="feature-text text-gray-300">Navigate with intuitive hotspots and smooth transitions between spaces</p>
+                    <h3 class="feature-title text-xl font-semibold mb-3">Street View Style</h3>
+                    <p class="feature-text">Navigate with intuitive hotspots and smooth transitions between spaces</p>
                 </div>
-                <div class="feature-card orange-glow bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 cursor-pointer">
-                    <div class="feature-icon text-4xl text-orange-500 mb-4">
+                <div class="feature-card orange-glow backdrop-blur-sm rounded-xl p-8 cursor-pointer">
+                    <div class="feature-icon text-3xl" style="color: #C2410C;">
                         <i class="fas fa-map"></i>
                     </div>
-                    <h3 class="feature-title text-xl font-semibold text-white mb-2">Interactive Map</h3>
-                    <p class="feature-text text-gray-300">Real-time minimap shows your location and viewing direction</p>
+                    <h3 class="feature-title text-xl font-semibold mb-3">Interactive Map</h3>
+                    <p class="feature-text">Real-time minimap shows your location and viewing direction</p>
                 </div>
-                <div class="feature-card amber-glow bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 cursor-pointer">
-                    <div class="feature-icon text-4xl text-amber-500 mb-4">
+                <div class="feature-card amber-glow backdrop-blur-sm rounded-xl p-8 cursor-pointer">
+                    <div class="feature-icon text-3xl" style="color: #B45309;">
                         <i class="fas fa-mobile-alt"></i>
                     </div>
-                    <h3 class="feature-title text-xl font-semibold text-white mb-2">Mobile Friendly</h3>
-                    <p class="feature-text text-gray-300">Optimized for all devices with touch and swipe controls</p>
+                    <h3 class="feature-title text-xl font-semibold mb-3">Mobile Friendly</h3>
+                    <p class="feature-text">Optimized for all devices with touch and swipe controls</p>
                 </div>
             </div>
 
             <!-- CTA Button -->
             <div class="space-y-4">
                 <a href="tour.html" 
-                   class="inline-block text-white font-bold py-4 px-12 rounded-full text-xl transition-all duration-300 
-                          transform hover:scale-105 shadow-lg"
-                   style="background: linear-gradient(135deg, #A73B24 0%, #D2691E 50%, #A73B24 100%); 
-                          box-shadow: 0 8px 32px rgba(167, 59, 36, 0.3);"
-                   onmouseover="this.style.boxShadow='0 12px 40px rgba(167, 59, 36, 0.5), 0 0 20px rgba(167, 59, 36, 0.3)'; this.style.background='linear-gradient(135deg, #8B2635 0%, #A73B24 50%, #D2691E 100%)';"
-                   onmouseout="this.style.boxShadow='0 8px 32px rgba(167, 59, 36, 0.3)'; this.style.background='linear-gradient(135deg, #A73B24 0%, #D2691E 50%, #A73B24 100%)';">
+                   class="inline-block text-white font-bold py-5 px-16 rounded-full text-xl transition-all duration-300 
+                          transform hover:scale-105 shadow-2xl border-2"
+                   style="background: linear-gradient(135deg, #A73B24 0%, #D2691E 100%); 
+                          border-color: rgba(167, 59, 36, 0.6);
+                          box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(167, 59, 36, 0.3);"
+                   onmouseover="this.style.boxShadow='0 15px 50px rgba(0,0,0,0.5), 0 0 30px rgba(167, 59, 36, 0.4), 0 0 0 1px rgba(167, 59, 36, 0.6)'; this.style.background='linear-gradient(135deg, #D2691E 0%, #A73B24 100%)'; this.style.borderColor='rgba(167, 59, 36, 0.8)';"
+                   onmouseout="this.style.boxShadow='0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(167, 59, 36, 0.3)'; this.style.background='linear-gradient(135deg, #A73B24 0%, #D2691E 100%)'; this.style.borderColor='rgba(167, 59, 36, 0.6)';">
                     <i class="fas fa-play mr-3"></i>
                     Start Virtual Tour
                 </a>
