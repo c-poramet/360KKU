@@ -77,7 +77,9 @@
         }
         
         /* Hotspot preview styles */
-        .hotspot-preview {
+        .hotspot-preview,
+        .pnlm-hotspot.hotspot-preview,
+        .pnlm-hotspot-base.hotspot-preview {
             background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
             border: 2px solid white !important;
             border-radius: 50% !important;
@@ -86,11 +88,38 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
             cursor: pointer !important;
             transition: all 0.2s ease !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 1000 !important;
         }
         
-        .hotspot-preview:hover {
+        /* Pannellum default hotspot styling */
+        .pnlm-hotspot {
+            height: 26px !important;
+            width: 26px !important;
+            background: #3b82f6 !important;
+            border: 2px solid #fff !important;
+            border-radius: 50% !important;
+            cursor: pointer !important;
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        .pnlm-hotspot:hover {
+            background: #ef4444 !important;
+        }
+        
+        .hotspot-preview:hover,
+        .pnlm-hotspot.hotspot-preview:hover,
+        .pnlm-hotspot-base.hotspot-preview:hover {
             background: linear-gradient(135deg, #ef4444, #dc2626) !important;
             transform: scale(1.2) !important;
+        }
+        
+        .custom-hotspot {
+            position: relative !important;
+            z-index: 1001 !important;
         }
         
         .dev-hotspot-marker:hover {
@@ -1212,22 +1241,29 @@
                     // Initialize Pannellum viewer
                     appState.viewer = pannellum.viewer('panorama-viewer', config);
                     
-                    // Set up hotspot click handler
-                    setupHotspotClickHandler();
+                    // Wait for viewer to fully load before setting up interactions
+                    appState.viewer.on('load', function() {
+                        console.log(`Scene loaded successfully: ${sceneId}`);
+                        
+                        // Set up hotspot click handler
+                        setupHotspotClickHandler();
+                        
+                        // Set up mouse tracking for coordinates
+                        setupMouseTracking();
+                        
+                        // Render existing hotspots AFTER viewer is fully loaded
+                        renderHotspots();
+                        
+                        console.log(`Hotspots rendered for scene: ${sceneId}`);
+                    });
                     
-                    // Set up mouse tracking for coordinates
-                    setupMouseTracking();
-                    
-                    // Enable hotspot mode button
+                    // Enable hotspot mode button immediately
                     const hotspotBtn = document.getElementById('add-hotspot-mode');
                     if (hotspotBtn) {
                         hotspotBtn.disabled = false;
                     }
                     
-                    // Render existing hotspots
-                    setTimeout(() => renderHotspots(), 100);
-                    
-                    console.log(`Loaded scene in viewer: ${sceneId}`);
+                    console.log(`Initializing viewer for scene: ${sceneId}`);
                 } catch (error) {
                     console.error('Error loading scene in viewer:', error);
                     
@@ -1463,10 +1499,16 @@
             // Add to current scene
             tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
             
+            console.log('=== Hotspot Added ===');
+            console.log('Current scene:', appState.currentSceneId);
+            console.log('Total hotspots now:', tourData.scenes[appState.currentSceneId].hotSpots.length);
+            console.log('All hotspots:', tourData.scenes[appState.currentSceneId].hotSpots);
+            
             // Update UI
             updateAllUI();
             
             // Render hotspots in viewer
+            console.log('Calling renderHotspots after adding new hotspot...');
             renderHotspots();
             
             // Auto-save changes
@@ -1483,18 +1525,28 @@
          * Render hotspots in the panorama viewer
          */
         function renderHotspots() {
+            console.log('=== renderHotspots called ===');
+            console.log('Current scene ID:', appState.currentSceneId);
+            
             if (!appState.currentSceneId || !tourData.scenes[appState.currentSceneId]) {
+                console.warn('No current scene ID or scene not found');
                 return;
             }
             
             const scene = tourData.scenes[appState.currentSceneId];
             const hotspots = scene.hotSpots || [];
             
+            console.log('Scene data:', scene);
+            console.log('Hotspots to render:', hotspots.length, hotspots);
+            console.log('Viewer exists:', !!appState.viewer);
+            
             if (appState.viewer) {
                 // Pannellum viewer mode - add hotspots to the viewer
+                console.log('Using Pannellum viewer mode');
                 renderPannellumHotspots(hotspots);
             } else {
                 // Development mode - render visual hotspot markers
+                console.log('Using development mode');
                 renderDevelopmentHotspots(hotspots);
             }
         }
@@ -1503,35 +1555,148 @@
          * Render hotspots in Pannellum viewer
          */
         function renderPannellumHotspots(hotspots) {
-            // Remove existing hotspots
-            if (appState.viewer && appState.viewer.removeHotSpot) {
-                hotspots.forEach((hotspot, index) => {
+            if (!appState.viewer) {
+                console.warn('Viewer not ready for hotspot rendering');
+                return;
+            }
+            
+            console.log(`Rendering ${hotspots.length} hotspots in Pannellum viewer`);
+            
+            // Remove ALL existing hotspots more thoroughly
+            try {
+                // Try to get config and remove all hotspots
+                const config = appState.viewer.getConfig();
+                if (config.hotSpots) {
+                    config.hotSpots.forEach((existingHotspot) => {
+                        if (existingHotspot.id && existingHotspot.id.startsWith('hotspot_')) {
+                            try {
+                                appState.viewer.removeHotSpot(existingHotspot.id);
+                                console.log(`Removed existing hotspot: ${existingHotspot.id}`);
+                            } catch (e) {
+                                // Ignore removal errors
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                // Fallback: try to remove by index (up to 100 possible hotspots)
+                console.log('Using fallback hotspot removal method');
+                for (let i = 0; i < 100; i++) {
                     try {
-                        appState.viewer.removeHotSpot(`hotspot_${index}`);
+                        appState.viewer.removeHotSpot(`hotspot_${i}`);
                     } catch (e) {
-                        // Hotspot might not exist yet
+                        // Stop when no more hotspots to remove
+                        break;
                     }
-                });
+                }
             }
             
             // Add current hotspots
             hotspots.forEach((hotspot, index) => {
-                if (appState.viewer && appState.viewer.addHotSpot) {
-                    try {
-                        appState.viewer.addHotSpot({
-                            "id": `hotspot_${index}`,
-                            "pitch": hotspot.pitch,
-                            "yaw": hotspot.yaw,
-                            "type": "scene",
-                            "text": hotspot.text,
-                            "sceneId": hotspot.sceneId,
-                            "cssClass": "hotspot-preview"
-                        });
-                    } catch (e) {
-                        console.error('Error adding hotspot to viewer:', e);
-                    }
+                try {
+                    const hotspotConfig = {
+                        "id": `hotspot_${index}`,
+                        "pitch": hotspot.pitch,
+                        "yaw": hotspot.yaw,
+                        "type": "info",
+                        "text": hotspot.text,
+                        "URL": "#",  // Dummy URL to ensure hotspot is clickable
+                        "clickHandlerFunc": function(evt, args) {
+                            evt.preventDefault();
+                            console.log(`Hotspot clicked: ${hotspot.text} -> ${hotspot.sceneId}`);
+                            // Future: navigate to scene
+                        },
+                        "createTooltipFunc": function(hotSpotDiv) {
+                            // Clear any default content
+                            hotSpotDiv.innerHTML = '';
+                            
+                            // Create visible hotspot marker
+                            const marker = document.createElement('div');
+                            marker.style.cssText = `
+                                width: 30px;
+                                height: 30px;
+                                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                                border: 3px solid white;
+                                border-radius: 50%;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                                cursor: pointer;
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                z-index: 10000;
+                            `;
+                            
+                            // Create label
+                            const label = document.createElement('div');
+                            label.textContent = hotspot.text;
+                            label.style.cssText = `
+                                position: absolute;
+                                top: 40px;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                background: rgba(0, 0, 0, 0.8);
+                                color: white;
+                                padding: 6px 12px;
+                                border-radius: 4px;
+                                font-size: 13px;
+                                white-space: nowrap;
+                                pointer-events: none;
+                                opacity: 0;
+                                transition: opacity 0.2s;
+                                z-index: 10001;
+                            `;
+                            
+                            // Show label on hover
+                            marker.addEventListener('mouseenter', () => {
+                                label.style.opacity = '1';
+                                marker.style.transform = 'translate(-50%, -50%) scale(1.2)';
+                                marker.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                            });
+                            
+                            marker.addEventListener('mouseleave', () => {
+                                label.style.opacity = '0';
+                                marker.style.transform = 'translate(-50%, -50%) scale(1)';
+                                marker.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+                            });
+                            
+                            hotSpotDiv.appendChild(marker);
+                            hotSpotDiv.appendChild(label);
+                            hotSpotDiv.classList.add('custom-hotspot');
+                            
+                            console.log(`✅ Hotspot DOM created for: "${hotspot.text}"`);
+                        }
+                    };
+                    
+                    appState.viewer.addHotSpot(hotspotConfig);
+                    console.log(`✅ Added hotspot ${index}: "${hotspot.text}" at yaw:${hotspot.yaw.toFixed(1)}, pitch:${hotspot.pitch.toFixed(1)}`);
+                } catch (e) {
+                    console.error(`❌ Error adding hotspot ${index} to viewer:`, e);
                 }
             });
+            
+            // Verify hotspots were added
+            try {
+                const config = appState.viewer.getConfig();
+                console.log(`📊 Verification: Viewer now has ${config.hotSpots ? config.hotSpots.length : 0} hotspots in config`);
+            } catch (e) {
+                console.error('Error verifying hotspots:', e);
+            }
+            
+            // Check DOM for hotspot elements
+            setTimeout(() => {
+                const hotspotElements = document.querySelectorAll('.pnlm-hotspot, .hotspot-preview');
+                console.log(`🔍 DOM Check: Found ${hotspotElements.length} hotspot elements in DOM`);
+                hotspotElements.forEach((el, idx) => {
+                    console.log(`  Hotspot ${idx}:`, el.className, 'Style:', el.style.cssText);
+                });
+                
+                if (hotspotElements.length === 0 && hotspots.length > 0) {
+                    console.error('⚠️ WARNING: Hotspots added to config but not visible in DOM!');
+                }
+            }, 500);
+            
+            console.log(`✅ Successfully rendered ${hotspots.length} hotspots`);
         }
 
         /**
