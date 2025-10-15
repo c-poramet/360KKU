@@ -381,11 +381,19 @@
                 
                 <!-- Deployment Path -->
                 <div>
-                    <label class="block text-sm font-medium mb-2 text-gray-300">Deployment Image Path</label>
+                    <label class="block text-sm font-medium mb-2 text-gray-300">
+                        Deployment Image Path 
+                        <span class="text-green-400 text-xs ml-2">
+                            <i class="fas fa-magic"></i> Auto-generated
+                        </span>
+                    </label>
                     <input type="text" id="panorama-path" required 
                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="e.g., images/main-lobby.jpg, ./assets/entrance.png">
-                    <p class="text-xs text-gray-400 mt-1">Final path where this image will be hosted in your website</p>
+                           placeholder="Auto-generated based on filename...">
+                    <p class="text-xs text-gray-400 mt-1">
+                        <i class="fas fa-lightbulb text-yellow-400"></i>
+                        Automatically detects floor level from filename and generates: <code>images/floor1/</code> or <code>images/floor2/</code>
+                    </p>
                 </div>
                 
                 <!-- Modal Actions -->
@@ -875,6 +883,10 @@
                 return;
             }
             
+            // Auto-generate deployment path based on filename
+            const deploymentPath = generateDeploymentPath(file.name);
+            document.getElementById('panorama-path').value = deploymentPath;
+            
             // Store file for potential use in viewer
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -883,15 +895,40 @@
                 dropZone.innerHTML = `
                     <i class="fas fa-check-circle text-2xl text-green-400 mb-2"></i>
                     <p class="text-green-300 mb-1">Image selected: ${file.name}</p>
+                    <p class="text-blue-300 text-xs mb-2">Auto-generated path: ${deploymentPath}</p>
                     <button type="button" onclick="document.getElementById('panorama-file').click()" 
                             class="mt-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
                         Change Image
                     </button>
                 `;
                 
-                console.log('Panorama preview image loaded');
+                console.log('Panorama preview image loaded, deployment path:', deploymentPath);
             };
             reader.readAsDataURL(file);
+        }
+
+        /**
+         * Generate deployment path based on filename
+         * Automatically detects floor level and places in correct directory
+         */
+        function generateDeploymentPath(filename) {
+            const cleanName = filename.toLowerCase();
+            
+            // Detect floor level from filename
+            let floorLevel = 'floor1'; // default
+            
+            if (cleanName.includes('floor2') || cleanName.includes('2nd') || cleanName.includes('second')) {
+                floorLevel = 'floor2';
+            } else if (cleanName.includes('floor1') || cleanName.includes('1st') || cleanName.includes('first')) {
+                floorLevel = 'floor1';
+            } else if (cleanName.includes('ground') || cleanName.includes('main') || cleanName.includes('entrance')) {
+                floorLevel = 'floor1';
+            } else if (cleanName.includes('upper') || cleanName.includes('top') || cleanName.includes('lab')) {
+                floorLevel = 'floor2';
+            }
+            
+            // Generate the final path
+            return `images/${floorLevel}/${filename}`;
         }
 
         // ===========================
@@ -1623,20 +1660,28 @@
          */
         function showImagePathHelper() {
             const message = `
-Image Path Format Guidelines:
+🎯 Automated Image Path System
 
-For local development:
-• images/scene1.jpg
-• panoramas/office.jpg
-• photos/entrance.png
+✅ FLOOR 1 Detection (images/floor1/):
+• Keywords: floor1, 1st, first, ground, main, entrance
+• Examples: "entrance-hall.jpg", "main-lobby-floor1.jpg"
 
-For web deployment:
-• https://your-domain.com/images/scene1.jpg
-• /assets/panoramas/office.jpg
+✅ FLOOR 2 Detection (images/floor2/):
+• Keywords: floor2, 2nd, second, upper, top, lab
+• Examples: "lab-room-floor2.jpg", "second-floor-hall.jpg"
 
-Supported formats: .jpg, .jpeg, .png, .webp
+🔧 Auto-Generated Paths:
+• "entrance-hall.jpg" → "images/floor1/entrance-hall.jpg"
+• "lab-room-floor2.jpg" → "images/floor2/lab-room-floor2.jpg"
 
-Note: Ensure images are accessible from your web server.
+📁 Final Website Structure:
+/your-website/
+  ├── images/
+  │   ├── floor1/ ← Ground floor images
+  │   └── floor2/ ← Upper floor images
+  └── index.html
+
+💡 The system automatically detects the floor from your filename!
             `;
             
             alert(message);
@@ -1692,6 +1737,7 @@ Note: Ensure images are accessible from your web server.
         window.copyToClipboard = copyToClipboard;
         window.resetConfiguration = resetConfiguration;
         window.toggleHotspotMode = toggleHotspotMode;
+        window.generateDeploymentPath = generateDeploymentPath;
     </script>
 </body>
 </html>
