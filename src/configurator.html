@@ -964,33 +964,88 @@
             // Hide empty state
             document.getElementById('viewer-empty-state').style.display = 'none';
             
-            // Create viewer configuration
-            const config = {
-                "type": "equirectangular",
-                "panorama": scene.panorama,
-                "autoLoad": true,
-                "pitch": 0,
-                "yaw": 0,
-                "hfov": 100
-            };
+            // Check if panorama path exists or use development mode
+            const isDevelopmentPath = scene.panorama.startsWith('images/');
             
-            try {
-                // Initialize Pannellum viewer
-                appState.viewer = pannellum.viewer('panorama-viewer', config);
+            if (isDevelopmentPath) {
+                // Development mode - show placeholder and enable hotspot functionality
+                const viewerEl = document.getElementById('panorama-viewer');
+                viewerEl.innerHTML = `
+                    <div class="flex items-center justify-center h-full bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg">
+                        <div class="text-center p-8">
+                            <i class="fas fa-image text-6xl text-gray-500 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-white mb-2">Development Mode</h3>
+                            <p class="text-gray-300 mb-4">Scene: ${scene.title}</p>
+                            <p class="text-gray-400 text-sm mb-4">Image path: ${scene.panorama}</p>
+                            <p class="text-blue-300 text-sm">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Click anywhere to add hotspots (coordinates will be simulated)
+                            </p>
+                        </div>
+                    </div>
+                `;
                 
-                // Set up hotspot click handler
-                setupHotspotClickHandler();
-                
-                // Set up mouse tracking for coordinates
-                setupMouseTracking();
+                // Set up click handler for development mode
+                viewerEl.onclick = function(e) {
+                    if (appState.hotspotMode) {
+                        const rect = viewerEl.getBoundingClientRect();
+                        const yaw = ((e.clientX - rect.left) / rect.width) * 360 - 180; // Convert to yaw
+                        const pitch = ((e.clientY - rect.top) / rect.height) * 180 - 90;   // Convert to pitch
+                        
+                        console.log(`Development mode hotspot click at yaw: ${yaw.toFixed(2)}, pitch: ${pitch.toFixed(2)}`);
+                        handleHotspotClick({ yaw, pitch });
+                    }
+                };
                 
                 // Enable hotspot mode button
                 document.getElementById('add-hotspot-mode').disabled = false;
                 
-                console.log(`Loaded scene in viewer: ${sceneId}`);
-            } catch (error) {
-                console.error('Error loading scene in viewer:', error);
-                alert('Error loading panorama. Please check the image path.');
+                console.log(`Loaded scene in development mode: ${sceneId}`);
+                
+            } else {
+                // Production mode - try to load actual panorama
+                const config = {
+                    "type": "equirectangular",
+                    "panorama": scene.panorama,
+                    "autoLoad": true,
+                    "pitch": 0,
+                    "yaw": 0,
+                    "hfov": 100
+                };
+                
+                try {
+                    // Initialize Pannellum viewer
+                    appState.viewer = pannellum.viewer('panorama-viewer', config);
+                    
+                    // Set up hotspot click handler
+                    setupHotspotClickHandler();
+                    
+                    // Set up mouse tracking for coordinates
+                    setupMouseTracking();
+                    
+                    // Enable hotspot mode button
+                    document.getElementById('add-hotspot-mode').disabled = false;
+                    
+                    console.log(`Loaded scene in viewer: ${sceneId}`);
+                } catch (error) {
+                    console.error('Error loading scene in viewer:', error);
+                    
+                    // Fallback to development mode
+                    const viewerEl = document.getElementById('panorama-viewer');
+                    viewerEl.innerHTML = `
+                        <div class="flex items-center justify-center h-full bg-red-900 bg-opacity-20 border-2 border-red-600 rounded-lg">
+                            <div class="text-center p-8">
+                                <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+                                <h3 class="text-xl font-semibold text-white mb-2">Image Load Error</h3>
+                                <p class="text-red-300 mb-4">Could not load: ${scene.panorama}</p>
+                                <p class="text-gray-400 text-sm">Hotspot mode is still available for testing</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Enable hotspot mode button even on error
+                    document.getElementById('add-hotspot-mode').disabled = false;
+                }
             }
             
             // Update UI to reflect current scene
@@ -1026,7 +1081,7 @@
          * Toggle hotspot adding mode
          */
         function toggleHotspotMode() {
-            if (!appState.currentSceneId || !appState.viewer) {
+            if (!appState.currentSceneId) {
                 return;
             }
             
@@ -1076,55 +1131,69 @@
                     const pitch = coords[0];
                     const yaw = coords[1];
                     
-                    // Get available destination scenes
-                    const availableScenes = Object.keys(tourData.scenes)
-                        .filter(id => id !== appState.currentSceneId);
-                    
-                    if (availableScenes.length === 0) {
-                        alert('No destination scenes available! Create more scenes first.');
-                        return;
-                    }
-                    
-                    // Create selection prompt
-                    const sceneOptions = availableScenes.map((sceneId, index) => 
-                        `${index + 1}. ${sceneId} - ${tourData.scenes[sceneId].title}`
-                    ).join('\\n');
-                    
-                    const selection = prompt(
-                        `Select destination scene for this hotspot:\\n\\n${sceneOptions}\\n\\nEnter the scene ID:`
-                    );
-                    
-                    if (!selection || !tourData.scenes[selection]) {
-                        alert('Invalid scene ID! Please enter an exact scene ID from the list.');
-                        return;
-                    }
-                    
-                    const hotspotText = prompt('Enter hotspot text (what users will see):', 
-                        `Go to ${tourData.scenes[selection].title}`);
-                    
-                    if (!hotspotText) return;
-                    
-                    // Add hotspot to current scene
-                    const hotspot = {
-                        "pitch": parseFloat(pitch.toFixed(1)),
-                        "yaw": parseFloat(yaw.toFixed(1)),
-                        "type": "scene",
-                        "text": hotspotText,
-                        "sceneId": selection
-                    };
-                    
-                    tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
-                    
-                    // Update UI
-                    updateAllUI();
-                    
-                    console.log(`Added hotspot: ${hotspotText} -> ${selection} at pitch:${pitch.toFixed(1)}, yaw:${yaw.toFixed(1)}`);
+                    // Use common hotspot handler
+                    handleHotspotClick({ pitch, yaw });
                     
                 } catch (error) {
                     console.error('Error adding hotspot:', error);
                     alert('Error adding hotspot. Please try again.');
                 }
             });
+        }
+
+        /**
+         * Handle hotspot click with coordinates (works for both Pannellum and development mode)
+         */
+        function handleHotspotClick(coords) {
+            if (!appState.currentSceneId) {
+                alert('No scene selected!');
+                return;
+            }
+            
+            // Get available destination scenes
+            const availableScenes = Object.keys(tourData.scenes)
+                .filter(id => id !== appState.currentSceneId);
+            
+            if (availableScenes.length === 0) {
+                alert('No destination scenes available! Create more scenes first.');
+                return;
+            }
+            
+            // Create selection prompt
+            const sceneOptions = availableScenes.map((sceneId, index) => 
+                `${index + 1}. ${sceneId} - ${tourData.scenes[sceneId].title}`
+            ).join('\\n');
+            
+            const selection = prompt(
+                `Select destination scene for this hotspot:\\n\\n${sceneOptions}\\n\\nEnter the scene ID:`
+            );
+            
+            if (!selection || !tourData.scenes[selection]) {
+                alert('Invalid scene ID! Please enter an exact scene ID from the list.');
+                return;
+            }
+            
+            const hotspotText = prompt('Enter hotspot text (what users will see):', 
+                `Go to ${tourData.scenes[selection].title}`);
+            
+            if (!hotspotText) return;
+            
+            // Add hotspot to current scene
+            const hotspot = {
+                "pitch": parseFloat(coords.pitch.toFixed(1)),
+                "yaw": parseFloat(coords.yaw.toFixed(1)),
+                "type": "scene",
+                "text": hotspotText,
+                "sceneId": selection
+            };
+            
+            tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
+            
+            // Update UI
+            updateAllUI();
+            
+            showMessage(`Added hotspot: "${hotspotText}" -> ${selection}`, 'success');
+            console.log(`Added hotspot: ${hotspotText} -> ${selection} at pitch:${coords.pitch.toFixed(1)}, yaw:${coords.yaw.toFixed(1)}`);
         }
 
         /**
