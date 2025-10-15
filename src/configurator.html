@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360° Tour Configurator - KKU CoE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom styles for the configurator */
+        #minimap-canvas {
+            border: 2px solid #374151;
+            border-radius: 0.5rem;
+            cursor: crosshair;
+        }
+        
+        #minimap-canvas.adding-scenes {
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        
+        #panorama-viewer {
+            height: 500px;
+            width: 100%;
+            border: 2px solid #374151;
+            border-radius: 0.5rem;
+            background: #1f2937;
+        }
+        
+        #panorama-viewer.adding-hotspots {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        
+        .scene-item {
+            transition: all 0.2s ease;
+        }
+        
+        .scene-item:hover {
+            background-color: rgba(167, 59, 36, 0.1);
+            border-color: rgba(167, 59, 36, 0.3);
+        }
+        
+        .scene-item.active {
+            background-color: rgba(167, 59, 36, 0.2);
+            border-color: rgba(167, 59, 36, 0.5);
+        }
+        
+        .coordinates-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .hotspot-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 p-4 border-b border-gray-700">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-white">
+                <i class="fas fa-cogs mr-2 text-orange-500"></i>
+                360° Tour Configurator - KKU CoE
+            </h1>
+            <div class="text-sm text-gray-400">
+                Developer Tool for Pannellum Tour Configuration
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="flex h-screen">
+        <!-- Left Panel - Minimap & Scene Management -->
+        <div class="w-1/3 p-6 bg-gray-800 border-r border-gray-700 overflow-y-auto">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-map mr-2"></i>
+                    Floor Plan & Scenes
+                </h2>
+                
+                <!-- Minimap Canvas -->
+                <div class="mb-4">
+                    <canvas id="minimap-canvas" width="280" height="200" class="w-full"></canvas>
+                </div>
+                
+                <!-- Scene Management Controls -->
+                <div class="space-y-4">
+                    <button id="toggle-add-scenes" 
+                            class="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Start Adding Scenes
+                    </button>
+                    
+                    <div class="text-sm text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Click on the floor plan to add scenes
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scene List -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-list mr-2"></i>
+                    Scenes (<span id="scene-count">0</span>)
+                </h3>
+                <div id="scene-list" class="space-y-2">
+                    <div class="text-gray-500 text-sm italic">No scenes added yet</div>
+                </div>
+            </div>
+            
+            <!-- Tour Settings -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-gear mr-2"></i>
+                    Tour Settings
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">First Scene ID:</label>
+                        <select id="first-scene-select" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white">
+                            <option value="">Select a scene...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Fade Duration (ms):</label>
+                        <input type="number" id="fade-duration" value="1000" min="0" max="5000" 
+                               class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel - Pannellum Viewer -->
+        <div class="w-2/3 p-6 bg-gray-900 relative">
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-eye mr-2"></i>
+                    360° Panorama Viewer
+                </h2>
+                
+                <!-- Viewer Controls -->
+                <div class="mb-4 flex space-x-4">
+                    <button id="toggle-add-hotspots" disabled
+                            class="py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors">
+                        <i class="fas fa-crosshairs mr-2"></i>
+                        Start Adding Hotspots
+                    </button>
+                    
+                    <div class="text-sm text-gray-400 flex items-center">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Load a scene first, then click to add navigation hotspots
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Panorama Viewer Container -->
+            <div class="relative">
+                <div id="panorama-viewer"></div>
+                
+                <!-- Coordinates Display (shown when adding hotspots) -->
+                <div id="coordinates-display" class="coordinates-display hidden">
+                    Pitch: <span id="current-pitch">0.0</span>° | Yaw: <span id="current-yaw">0.0</span>°
+                </div>
+                
+                <!-- Empty State -->
+                <div id="viewer-empty-state" class="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg">
+                    <div class="text-center text-gray-400">
+                        <i class="fas fa-image text-4xl mb-4"></i>
+                        <p class="text-lg">Select a scene from the left panel to load its panorama</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Panel - JSON Output -->
+    <div class="bg-gray-800 border-t border-gray-700 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold">
+                <i class="fas fa-code mr-2"></i>
+                Generated tourData JSON
+            </h2>
+            <button id="copy-json" 
+                    class="py-2 px-6 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors">
+                <i class="fas fa-copy mr-2"></i>
+                Copy to Clipboard
+            </button>
+        </div>
+        
+        <textarea id="json-output" 
+                  class="w-full h-40 p-4 bg-gray-900 border border-gray-600 rounded-lg text-green-400 font-mono text-sm resize-none"
+                  placeholder="Your tourData JSON will appear here as you add scenes and hotspots..."
+                  readonly></textarea>
+    </div>
+
+    <script>
+        // ===========================
+        // GLOBAL STATE MANAGEMENT
+        // ===========================
+        
+        /**
+         * Main configuration object that will be converted to JSON output
+         * This mirrors the exact structure required by Pannellum
+         */
+        let tourData = {
+            "default": {
+                "firstScene": "",
+                "sceneFadeDuration": 1000,
+                "autoLoad": true
+            },
+            "scenes": {}
+        };
+        
+        /**
+         * Application state variables
+         */
+        let appState = {
+            addingScenesMode: false,     // Whether we're in scene-adding mode
+            addingHotspotsMode: false,   // Whether we're in hotspot-adding mode
+            currentSceneId: null,        // Currently loaded scene in viewer
+            viewer: null,                // Pannellum viewer instance
+            canvas: null,                // Minimap canvas element
+            ctx: null                    // Canvas 2D context
+        };
+
+        // ===========================
+        // INITIALIZATION
+        // ===========================
+        
+        /**
+         * Initialize the configurator when page loads
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCanvas();
+            initializeEventListeners();
+            updateJsonOutput();
+            drawFloorPlan();
+            
+            console.log('360° Tour Configurator initialized');
+        });
+
+        /**
+         * Set up the minimap canvas and context
+         */
+        function initializeCanvas() {
+            appState.canvas = document.getElementById('minimap-canvas');
+            appState.ctx = appState.canvas.getContext('2d');
+            
+            // Set up high-DPI canvas rendering
+            const rect = appState.canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            appState.canvas.width = rect.width * dpr;
+            appState.canvas.height = rect.height * dpr;
+            appState.ctx.scale(dpr, dpr);
+        }
+
+        /**
+         * Set up all event listeners for the interface
+         */
+        function initializeEventListeners() {
+            // Scene management buttons
+            document.getElementById('toggle-add-scenes').addEventListener('click', toggleAddScenesMode);
+            document.getElementById('toggle-add-hotspots').addEventListener('click', toggleAddHotspotsMode);
+            
+            // Canvas click for adding scenes
+            appState.canvas.addEventListener('click', handleCanvasClick);
+            
+            // Tour settings
+            document.getElementById('first-scene-select').addEventListener('change', updateFirstScene);
+            document.getElementById('fade-duration').addEventListener('input', updateFadeDuration);
+            
+            // JSON output
+            document.getElementById('copy-json').addEventListener('click', copyJsonToClipboard);
+        }
+
+        // ===========================
+        // FLOOR PLAN DRAWING
+        // ===========================
+        
+        /**
+         * Draw the building floor plan on the minimap canvas
+         * This uses the same layout as the main tour application
+         */
+        function drawFloorPlan() {
+            const ctx = appState.ctx;
+            const canvas = appState.canvas;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Set drawing style for floor plan
+            ctx.strokeStyle = '#64748b';
+            ctx.fillStyle = '#374151';
+            ctx.lineWidth = 2;
+            
+            // Draw main horizontal corridor (hallway)
+            ctx.fillRect(30, 65, 140, 30);
+            ctx.strokeRect(30, 65, 140, 30);
+            
+            // Draw vertical section (entrance area)
+            ctx.fillRect(35, 95, 30, 50);
+            ctx.strokeRect(35, 95, 30, 50);
+            
+            // Draw classroom/lab area
+            ctx.fillRect(140, 35, 40, 40);
+            ctx.strokeRect(140, 35, 40, 40);
+            
+            // Add detail lines for walls/doors
+            ctx.strokeStyle = '#6b7280';
+            ctx.lineWidth = 1;
+            
+            // Door openings
+            ctx.beginPath();
+            ctx.moveTo(50, 95);
+            ctx.lineTo(50, 105);
+            ctx.moveTo(140, 55);
+            ctx.lineTo(150, 55);
+            ctx.stroke();
+            
+            // Add labels
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Entrance', 50, 135);
+            ctx.fillText('Corridor', 100, 85);
+            ctx.fillText('Lab/Class', 160, 60);
+            
+            // Draw existing scene markers
+            drawSceneMarkers();
+        }
+
+        /**
+         * Draw markers for all configured scenes on the minimap
+         */
+        function drawSceneMarkers() {
+            const ctx = appState.ctx;
+            
+            Object.keys(tourData.scenes).forEach(sceneId => {
+                const scene = tourData.scenes[sceneId];
+                if (scene.map && scene.map.x && scene.map.y) {
+                    // Draw scene marker
+                    ctx.beginPath();
+                    ctx.arc(scene.map.x, scene.map.y, 8, 0, 2 * Math.PI);
+                    ctx.fillStyle = sceneId === appState.currentSceneId ? '#A73B24' : '#3b82f6';
+                    ctx.fill();
+                    
+                    // Draw white border
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw scene ID label
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(sceneId, scene.map.x, scene.map.y - 12);
+                }
+            });
+        }
+
+        // ===========================
+        // SCENE MANAGEMENT
+        // ===========================
+        
+        /**
+         * Toggle between scene-adding mode and normal mode
+         */
+        function toggleAddScenesMode() {
+            appState.addingScenesMode = !appState.addingScenesMode;
+            
+            const button = document.getElementById('toggle-add-scenes');
+            const canvas = appState.canvas;
+            
+            if (appState.addingScenesMode) {
+                button.innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Adding Scenes';
+                button.className = button.className.replace('bg-green-600 hover:bg-green-700', 'bg-red-600 hover:bg-red-700');
+                canvas.classList.add('adding-scenes');
+            } else {
+                button.innerHTML = '<i class="fas fa-plus mr-2"></i>Start Adding Scenes';
+                button.className = button.className.replace('bg-red-600 hover:bg-red-700', 'bg-green-600 hover:bg-green-700');
+                canvas.classList.remove('adding-scenes');
+            }
+        }
+
+        /**
+         * Handle clicks on the minimap canvas
+         * In scene-adding mode, this creates a new scene
+         */
+        function handleCanvasClick(event) {
+            if (!appState.addingScenesMode) return;
+            
+            // Get click coordinates relative to canvas
+            const rect = appState.canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Prompt for scene details
+            const sceneId = prompt('Enter a unique Scene ID (e.g., "entrance-hall", "lab-main"):');
+            if (!sceneId) return;
+            
+            // Check if scene ID already exists
+            if (tourData.scenes[sceneId]) {
+                alert('Scene ID already exists! Please use a unique ID.');
+                return;
+            }
+            
+            const panoramaUrl = prompt('Enter the panorama image URL or path:');
+            if (!panoramaUrl) return;
+            
+            const sceneTitle = prompt('Enter scene title (for display):', sceneId.replace(/[-_]/g, ' '));
+            
+            // Add new scene to tour data
+            tourData.scenes[sceneId] = {
+                "title": sceneTitle || sceneId,
+                "panorama": panoramaUrl,
+                "map": { "x": x, "y": y },
+                "hotSpots": []
+            };
+            
+            // Update UI
+            updateScenesList();
+            updateFirstSceneOptions();
+            updateJsonOutput();
+            drawFloorPlan(); // Redraw to show new marker
+            
+            console.log(`Added scene: ${sceneId} at (${x}, ${y})`);
+        }
+
+        /**
+         * Update the scenes list in the left panel
+         */
+        function updateScenesList() {
+            const sceneList = document.getElementById('scene-list');
+            const sceneCount = document.getElementById('scene-count');
+            
+            const sceneIds = Object.keys(tourData.scenes);
+            sceneCount.textContent = sceneIds.length;
+            
+            if (sceneIds.length === 0) {
+                sceneList.innerHTML = '<div class="text-gray-500 text-sm italic">No scenes added yet</div>';
+                return;
+            }
+            
+            sceneList.innerHTML = sceneIds.map(sceneId => {
+                const scene = tourData.scenes[sceneId];
+                const hotspotCount = scene.hotSpots ? scene.hotSpots.length : 0;
+                
+                return `
+                    <div class="scene-item p-3 bg-gray-700 border border-gray-600 rounded cursor-pointer ${
+                        sceneId === appState.currentSceneId ? 'active' : ''
+                    }" onclick="loadSceneInViewer('${sceneId}')">
+                        <div class="font-medium text-white">${scene.title}</div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            ID: ${sceneId} | Hotspots: ${hotspotCount}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            Position: (${scene.map.x}, ${scene.map.y})
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Update the first scene dropdown options
+         */
+        function updateFirstSceneOptions() {
+            const select = document.getElementById('first-scene-select');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Select a scene...</option>' +
+                Object.keys(tourData.scenes).map(sceneId => 
+                    `<option value="${sceneId}">${tourData.scenes[sceneId].title}</option>`
+                ).join('');
+            
+            // Restore selection if still valid
+            if (currentValue && tourData.scenes[currentValue]) {
+                select.value = currentValue;
+            }
+        }
+
+        // ===========================
+        // PANNELLUM VIEWER MANAGEMENT
+        // ===========================
+        
+        /**
+         * Load a scene's panorama into the Pannellum viewer
+         */
+        function loadSceneInViewer(sceneId) {
+            if (!tourData.scenes[sceneId]) return;
+            
+            const scene = tourData.scenes[sceneId];
+            appState.currentSceneId = sceneId;
+            
+            // Hide empty state
+            document.getElementById('viewer-empty-state').style.display = 'none';
+            
+            // Initialize or update viewer
+            if (appState.viewer) {
+                appState.viewer.destroy();
+            }
+            
+            // Create viewer configuration
+            const viewerConfig = {
+                "type": "equirectangular",
+                "panorama": scene.panorama,
+                "autoLoad": true,
+                "pitch": 0,
+                "yaw": 0,
+                "hfov": 100
+            };
+            
+            // Initialize Pannellum viewer
+            appState.viewer = pannellum.viewer('panorama-viewer', viewerConfig);
+            
+            // Set up mouse tracking for coordinates display
+            setupMouseTracking();
+            
+            // Set up hotspot click handling
+            setupHotspotClickHandling();
+            
+            // Enable hotspot adding button
+            document.getElementById('toggle-add-hotspots').disabled = false;
+            
+            // Update scenes list to show active scene
+            updateScenesList();
+            
+            // Redraw minimap to highlight current scene
+            drawFloorPlan();
+            
+            console.log(`Loaded scene: ${sceneId}`);
+        }
+
+        /**
+         * Set up mouse coordinate tracking over the panorama viewer
+         */
+        function setupMouseTracking() {
+            const viewerElement = document.getElementById('panorama-viewer');
+            const coordsDisplay = document.getElementById('coordinates-display');
+            const pitchSpan = document.getElementById('current-pitch');
+            const yawSpan = document.getElementById('current-yaw');
+            
+            viewerElement.addEventListener('mousemove', function(event) {
+                if (appState.addingHotspotsMode && appState.viewer) {
+                    try {
+                        const coords = appState.viewer.mouseEventToCoords(event);
+                        if (coords && coords.length >= 2) {
+                            pitchSpan.textContent = coords[0].toFixed(1);
+                            yawSpan.textContent = coords[1].toFixed(1);
+                        }
+                    } catch (e) {
+                        // Ignore coordinate calculation errors
+                    }
+                }
+            });
+        }
+
+        /**
+         * Set up click handling for adding hotspots to the panorama
+         */
+        function setupHotspotClickHandling() {
+            const viewerElement = document.getElementById('panorama-viewer');
+            
+            viewerElement.addEventListener('mousedown', function(event) {
+                if (!appState.addingHotspotsMode || !appState.viewer) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                try {
+                    // Get pitch and yaw coordinates from click
+                    const coords = appState.viewer.mouseEventToCoords(event);
+                    if (!coords || coords.length < 2) return;
+                    
+                    const pitch = coords[0];
+                    const yaw = coords[1];
+                    
+                    // Get available destination scenes (excluding current scene)
+                    const availableScenes = Object.keys(tourData.scenes)
+                        .filter(id => id !== appState.currentSceneId);
+                    
+                    if (availableScenes.length === 0) {
+                        alert('No other scenes available! Add more scenes first.');
+                        return;
+                    }
+                    
+                    // Create destination scene selection
+                    const sceneOptions = availableScenes.map(sceneId => 
+                        `${sceneId}: ${tourData.scenes[sceneId].title}`
+                    ).join('\\n');
+                    
+                    const destinationScene = prompt(
+                        `Select destination scene for this hotspot:\\n\\n${sceneOptions}\\n\\nEnter Scene ID:`
+                    );
+                    
+                    if (!destinationScene || !tourData.scenes[destinationScene]) {
+                        alert('Invalid scene ID!');
+                        return;
+                    }
+                    
+                    const hotspotText = prompt('Enter hotspot text:', `Go to ${tourData.scenes[destinationScene].title}`);
+                    if (!hotspotText) return;
+                    
+                    // Add hotspot to current scene
+                    const hotspot = {
+                        "pitch": parseFloat(pitch.toFixed(1)),
+                        "yaw": parseFloat(yaw.toFixed(1)),
+                        "type": "scene",
+                        "text": hotspotText,
+                        "sceneId": destinationScene
+                    };
+                    
+                    tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
+                    
+                    // Update UI
+                    updateScenesList();
+                    updateJsonOutput();
+                    
+                    console.log(`Added hotspot at pitch: ${pitch}, yaw: ${yaw} to scene: ${destinationScene}`);
+                    
+                } catch (error) {
+                    console.error('Error adding hotspot:', error);
+                    alert('Error adding hotspot. Please try again.');
+                }
+            });
+        }
+
+        // ===========================
+        // HOTSPOT MANAGEMENT
+        // ===========================
+        
+        /**
+         * Toggle hotspot adding mode
+         */
+        function toggleAddHotspotsMode() {
+            if (!appState.currentSceneId) return;
+            
+            appState.addingHotspotsMode = !appState.addingHotspotsMode;
+            
+            const button = document.getElementById('toggle-add-hotspots');
+            const viewer = document.getElementById('panorama-viewer');
+            const coordsDisplay = document.getElementById('coordinates-display');
+            
+            if (appState.addingHotspotsMode) {
+                button.innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Adding Hotspots';
+                button.className = button.className.replace('bg-blue-600 hover:bg-blue-700', 'bg-red-600 hover:bg-red-700');
+                viewer.classList.add('adding-hotspots');
+                coordsDisplay.classList.remove('hidden');
+            } else {
+                button.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Start Adding Hotspots';
+                button.className = button.className.replace('bg-red-600 hover:bg-red-700', 'bg-blue-600 hover:bg-blue-700');
+                viewer.classList.remove('adding-hotspots');
+                coordsDisplay.classList.add('hidden');
+            }
+        }
+
+        // ===========================
+        // TOUR SETTINGS
+        // ===========================
+        
+        /**
+         * Update the first scene setting
+         */
+        function updateFirstScene() {
+            const select = document.getElementById('first-scene-select');
+            tourData.default.firstScene = select.value;
+            updateJsonOutput();
+        }
+
+        /**
+         * Update the fade duration setting
+         */
+        function updateFadeDuration() {
+            const input = document.getElementById('fade-duration');
+            tourData.default.sceneFadeDuration = parseInt(input.value) || 1000;
+            updateJsonOutput();
+        }
+
+        // ===========================
+        // JSON OUTPUT MANAGEMENT
+        // ===========================
+        
+        /**
+         * Update the JSON output textarea with current tour data
+         */
+        function updateJsonOutput() {
+            const textarea = document.getElementById('json-output');
+            
+            // Create clean tour data (remove empty scenes)
+            const cleanTourData = {
+                ...tourData,
+                scenes: Object.fromEntries(
+                    Object.entries(tourData.scenes).filter(([_, scene]) => scene.panorama)
+                )
+            };
+            
+            // Generate formatted JSON
+            const jsonString = JSON.stringify(cleanTourData, null, 2);
+            textarea.value = jsonString;
+        }
+
+        /**
+         * Copy the JSON output to clipboard
+         */
+        function copyJsonToClipboard() {
+            const textarea = document.getElementById('json-output');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                
+                // Visual feedback
+                const button = document.getElementById('copy-json');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+                button.className = button.className.replace('bg-orange-600 hover:bg-orange-700', 'bg-green-600');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.className = button.className.replace('bg-green-600', 'bg-orange-600 hover:bg-orange-700');
+                }, 2000);
+                
+                console.log('JSON copied to clipboard');
+            } catch (err) {
+                console.error('Failed to copy JSON: ', err);
+                alert('Failed to copy to clipboard. Please select and copy manually.');
+            }
+        }
+
+        // ===========================
+        // UTILITY FUNCTIONS
+        // ===========================
+        
+        /**
+         * Generate a simple scene ID from a title
+         */
+        function generateSceneId(title) {
+            return title.toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+
+        // Expose key functions to global scope for onclick handlers
+        window.loadSceneInViewer = loadSceneInViewer;
+    </script>
+</body>
+</html>
