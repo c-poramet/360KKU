@@ -24,9 +24,9 @@
         #floorplan-container {
             position: absolute;
             bottom: 20px;
-            left: 20px;
-            width: 250px; /* Changed */
-            height: 250px; /* Changed */
+            right: 20px; /* Changed */
+            width: 250px;
+            height: 250px;
             border: 2px solid rgba(255, 255, 255, 0.7);
             border-radius: 8px;
             background: rgba(0, 0, 0, 0.6);
@@ -188,13 +188,14 @@
                 const scene = tourConfig.scenes[sceneId];
                 const { x, y } = scene.map;
 
-                // Zoom in and pan to the desired coordinates
-                minimap.zoom(3); // Zoom in to a fixed level
-                const newSizes = minimap.getSizes();
-                const panX = (newSizes.width / 2) - (x * newSizes.realZoom);
-                const panY = (newSizes.height / 2) - (y * newSizes.realZoom);
-                
-                minimap.pan({ x: panX, y: panY });
+                const targetZoom = 3;
+
+                // Animate pan and zoom to center the point
+                minimap.pan({
+                    x: -x * (targetZoom / 2), // Adjust pan based on zoom
+                    y: -y * (targetZoom / 2)
+                });
+                minimap.zoom(targetZoom);
             }
 
             loadTour();
