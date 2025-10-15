@@ -3,483 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KKU Virtual Tour - Computer Engineering</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>360° Virtual Tour</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Custom styles for the panorama viewer */
-        #panorama-viewer {
-            height: calc(100vh - 4rem);
+        body, html {
+            margin: 0;
+            padding: 0;
             width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
-        
-        /* Minimap container styling */
-        #minimap-container {
+        #panorama {
+            width: 100%;
+            height: 100%;
+        }
+        #floorplan-container {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            bottom: 20px;
+            left: 20px;
+            width: 250px;
+            height: auto;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 1000;
+            overflow: hidden;
         }
-        
-        #minimap-canvas {
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 0.25rem;
+        #floorplan-svg {
+            width: 100%;
+            height: 100%;
+            position: relative;
         }
-        
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            #minimap-container {
-                top: 0.5rem;
-                right: 0.5rem;
-                padding: 0.5rem;
-            }
+        .scene-marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #ff4500;
+            border-radius: 50%;
+            border: 2px solid white;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .scene-marker.active {
+            background-color: #00ff7f;
+            transform: translate(-50%, -50%) scale(1.3);
+        }
+        .pnlm-hotspot {
+            width: 30px !important;
+            height: 30px !important;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.8) !important;
+            border: 2px solid white !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
+            transition: all 0.2s ease-in-out !important;
+            /* transform: scale(1) !important; */ /* This was overriding Pannellum's positioning */
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        .pnlm-hotspot:hover {
+            transform: scale(1.2) !important;
         }
     </style>
 </head>
-<body class="bg-slate-900 overflow-hidden">
-    <!-- Header -->
-    <header class="bg-slate-800 p-4 relative z-50">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <a href="index.html" class="text-white hover:text-blue-400 transition-colors">
-                    <i class="fas fa-arrow-left text-xl"></i>
-                </a>
-                <h1 class="text-white text-lg font-semibold">
-                    <i class="fas fa-university mr-2"></i>
-                    KKU Computer Engineering Tour
-                </h1>
-            </div>
-            <div class="text-white text-sm hidden md:block">
-                <span id="current-scene">Entrance</span>
-                <span class="text-gray-400 ml-2">
-                    <i class="fas fa-mouse mr-1"></i>
-                    Drag to look around
-                </span>
-            </div>
-        </div>
-    </header>
+<body>
 
-    <!-- Main Panorama Viewer -->
-    <div class="relative">
-        <div id="panorama-viewer"></div>
-        
-        <!-- Minimap Container -->
-        <div id="minimap-container">
-            <div class="text-white text-xs mb-2 text-center">
-                <i class="fas fa-map mr-1"></i>
-                Floor Plan
-            </div>
-            <canvas id="minimap-canvas" width="200" height="150"></canvas>
-            <div class="text-white text-xs mt-2 text-center">
-                <span id="minimap-location">Entrance</span>
-            </div>
-        </div>
-
-        <!-- Loading Screen -->
-        <div id="loading-screen" class="absolute inset-0 bg-slate-900 flex items-center justify-center z-40">
-            <div class="text-center text-white">
-                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p class="text-xl">Loading Virtual Tour...</p>
-            </div>
-        </div>
+    <div id="panorama"></div>
+    <div id="floorplan-container">
+        <div id="floorplan-svg"></div>
     </div>
 
     <script>
-        // ===========================
-        // TOUR DATA CONFIGURATION
-        // ===========================
-        
-        /**
-         * Main tour configuration object containing all scenes and their properties
-         * Each scene includes panorama image, hotspots for navigation, and minimap coordinates
-         */
-        const tourData = {
-            "default": {
-                "firstScene": "entrance",
-                "author": "Poramet Chomphoochit - Computer Engineering, KKU",
-                "sceneFadeDuration": 1000,
-                "autoLoad": true
-            },
-            "scenes": {
-                "entrance": {
-                    "title": "CoE Building Entrance",
-                    "hfov": 110,
-                    "pitch": -10,
-                    "yaw": 117,
-                    "type": "equirectangular",
-                    "panorama": "https://placehold.co/2048x1024/1e293b/ffffff?text=KKU+COE+ENTRANCE+360°",
-                    "hotSpots": [
-                        {
-                            "pitch": -2,
-                            "yaw": 132,
-                            "type": "scene",
-                            "text": "Go to Hallway",
-                            "sceneId": "hallway",
-                            "cssClass": "hotspot-navigation"
-                        }
-                    ],
-                    // Minimap coordinates for this scene
-                    "mapPosition": { "x": 50, "y": 130 }
-                },
-                "hallway": {
-                    "title": "CoE Main Corridor",
-                    "hfov": 110,
-                    "pitch": -3,
-                    "yaw": 0,
-                    "type": "equirectangular", 
-                    "panorama": "https://placehold.co/2048x1024/374151/ffffff?text=KKU+COE+CORRIDOR+360°",
-                    "hotSpots": [
-                        {
-                            "pitch": -5,
-                            "yaw": 180,
-                            "type": "scene",
-                            "text": "Back to Entrance",
-                            "sceneId": "entrance",
-                            "cssClass": "hotspot-navigation"
-                        },
-                        {
-                            "pitch": -8,
-                            "yaw": 90,
-                            "type": "scene",
-                            "text": "Enter Computer Lab",
-                            "sceneId": "classroom", 
-                            "cssClass": "hotspot-navigation"
-                        }
-                    ],
-                    "mapPosition": { "x": 100, "y": 80 }
-                },
-                "classroom": {
-                    "title": "Computer Lab",
-                    "hfov": 110,
-                    "pitch": -5,
-                    "yaw": 270,
-                    "type": "equirectangular",
-                    "panorama": "https://placehold.co/2048x1024/475569/ffffff?text=KKU+COE+COMPUTER+LAB+360°",
-                    "hotSpots": [
-                        {
-                            "pitch": -3,
-                            "yaw": 270,
-                            "type": "scene",
-                            "text": "Back to Corridor",
-                            "sceneId": "hallway",
-                            "cssClass": "hotspot-navigation"
-                        }
-                    ],
-                    "mapPosition": { "x": 160, "y": 50 }
-                }
-            }
-        };
-
-        // ===========================
-        // MINIMAP DATA & VARIABLES
-        // ===========================
-        
-        /**
-         * Minimap configuration and state variables
-         */
-        const mapData = {
-            canvas: null,
-            ctx: null,
-            currentScene: 'entrance',
-            currentYaw: 0,
-            scale: 1
-        };
-
-        // Initialize canvas and context
-        mapData.canvas = document.getElementById('minimap-canvas');
-        mapData.ctx = mapData.canvas.getContext('2d');
-
-        // ===========================
-        // PANNELLUM VIEWER SETUP
-        // ===========================
-        
-        let viewer;
-
-        /**
-         * Initialize the Pannellum panorama viewer with tour data
-         */
-        function initializePanorama() {
-            viewer = pannellum.viewer('panorama-viewer', tourData);
-            
-            // Hide loading screen once viewer is ready
-            viewer.on('load', function() {
-                document.getElementById('loading-screen').style.display = 'none';
-            });
-
-            // Listen for scene changes to update minimap
-            viewer.on('scenechange', function(sceneId) {
-                updateCurrentScene(sceneId);
-                updateMinimap();
-            });
-
-            // Listen for view changes to update direction indicator
-            viewer.on('mouseup', function() {
-                updateDirectionIndicator();
-            });
-
-            // Also update on animation end (for smooth transitions)
-            viewer.on('animatefinished', function() {
-                updateDirectionIndicator();
-            });
-
-            // Initial minimap draw
-            updateMinimap();
-        }
-
-        // ===========================
-        // MINIMAP RENDERING FUNCTIONS
-        // ===========================
-        
-        /**
-         * Update the current scene information in UI and mapData
-         * @param {string} sceneId - The ID of the current scene
-         */
-        function updateCurrentScene(sceneId) {
-            mapData.currentScene = sceneId;
-            const sceneTitle = tourData.scenes[sceneId].title;
-            
-            // Update UI elements
-            document.getElementById('current-scene').textContent = sceneTitle;
-            document.getElementById('minimap-location').textContent = sceneTitle;
-        }
-
-        /**
-         * Main function to redraw the entire minimap
-         * Clears canvas and redraws floor plan, position marker, and direction indicator
-         */
-        function updateMinimap() {
-            const ctx = mapData.ctx;
-            const canvas = mapData.canvas;
-            
-            // Clear the entire canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw the floor plan
-            drawFloorPlan();
-            
-            // Draw current position marker
-            drawPositionMarker();
-            
-            // Draw direction indicator
-            drawDirectionIndicator();
-        }
-
-        /**
-         * Draw a simple T-shaped floor plan using Canvas API
-         * This represents the building layout with entrance, hallway, and classroom
-         */
-        function drawFloorPlan() {
-            const ctx = mapData.ctx;
-            
-            // Set drawing style for floor plan
-            ctx.strokeStyle = '#64748b'; // Slate gray
-            ctx.fillStyle = '#1e293b';   // Dark slate
-            ctx.lineWidth = 2;
-            
-            // Draw main horizontal corridor (hallway)
-            ctx.fillRect(30, 65, 140, 30);
-            ctx.strokeRect(30, 65, 140, 30);
-            
-            // Draw vertical section (entrance area)
-            ctx.fillRect(35, 95, 30, 50);
-            ctx.strokeRect(35, 95, 30, 50);
-            
-            // Draw classroom area
-            ctx.fillRect(140, 35, 40, 40);
-            ctx.strokeRect(140, 35, 40, 40);
-            
-            // Add some detail lines for walls/doors
-            ctx.strokeStyle = '#475569';
-            ctx.lineWidth = 1;
-            
-            // Door openings
-            ctx.beginPath();
-            ctx.moveTo(50, 95);
-            ctx.lineTo(50, 105);
-            ctx.moveTo(140, 55);
-            ctx.lineTo(150, 55);
-            ctx.stroke();
-            
-            // Add labels for areas (optional, small text)
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '8px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Entrance', 50, 125);
-            ctx.fillText('Corridor', 100, 85);
-            ctx.fillText('Computer Lab', 160, 60);
-        }
-
-        /**
-         * Draw a circular marker showing the user's current position
-         * Position is based on the current scene's mapPosition coordinates
-         */
-        function drawPositionMarker() {
-            const ctx = mapData.ctx;
-            const currentSceneData = tourData.scenes[mapData.currentScene];
-            
-            if (!currentSceneData || !currentSceneData.mapPosition) return;
-            
-            const pos = currentSceneData.mapPosition;
-            
-            // Draw outer circle (background)
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
-            ctx.fillStyle = '#1e40af'; // Blue background
-            ctx.fill();
-            
-            // Draw inner circle (foreground)
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 6, 0, 2 * Math.PI);
-            ctx.fillStyle = '#3b82f6'; // Lighter blue
-            ctx.fill();
-            
-            // Draw white center dot
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 3, 0, 2 * Math.PI);
-            ctx.fillStyle = '#ffffff';
-            ctx.fill();
-        }
-
-        /**
-         * Draw a directional wedge/arrow showing the user's current view direction
-         * The direction is based on the viewer's current yaw (horizontal rotation)
-         */
-        function drawDirectionIndicator() {
-            const ctx = mapData.ctx;
-            const currentSceneData = tourData.scenes[mapData.currentScene];
-            
-            if (!currentSceneData || !currentSceneData.mapPosition) return;
-            
-            const pos = currentSceneData.mapPosition;
-            
-            // Get current yaw from viewer (convert to radians)
-            const yaw = viewer.getYaw();
-            const yawRad = (yaw * Math.PI) / 180;
-            
-            // Calculate direction indicator
-            const indicatorLength = 15;
-            const indicatorWidth = Math.PI / 6; // 30 degrees
-            
-            // Calculate arrow points
-            const tipX = pos.x + Math.cos(yawRad) * indicatorLength;
-            const tipY = pos.y + Math.sin(yawRad) * indicatorLength;
-            
-            const leftX = pos.x + Math.cos(yawRad - indicatorWidth) * (indicatorLength * 0.7);
-            const leftY = pos.y + Math.sin(yawRad - indicatorWidth) * (indicatorLength * 0.7);
-            
-            const rightX = pos.x + Math.cos(yawRad + indicatorWidth) * (indicatorLength * 0.7);
-            const rightY = pos.y + Math.sin(yawRad + indicatorWidth) * (indicatorLength * 0.7);
-            
-            // Draw the direction arrow
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-            ctx.lineTo(leftX, leftY);
-            ctx.lineTo(tipX, tipY);
-            ctx.lineTo(rightX, rightY);
-            ctx.closePath();
-            
-            ctx.fillStyle = '#ef4444'; // Red arrow
-            ctx.fill();
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-        }
-
-        /**
-         * Optimized function to update only the direction indicator
-         * Called frequently during view changes for smooth real-time updates
-         */
-        function updateDirectionIndicator() {
-            // Store current yaw for comparison
-            const newYaw = viewer.getYaw();
-            
-            // Only redraw if yaw has changed significantly (optimization)
-            if (Math.abs(newYaw - mapData.currentYaw) > 2) {
-                mapData.currentYaw = newYaw;
-                
-                // Redraw entire minimap (in a real app, you might optimize this further)
-                updateMinimap();
-            }
-        }
-
-        // ===========================
-        // INITIALIZATION
-        // ===========================
-        
-        /**
-         * Initialize the entire application when page loads
-         */
         document.addEventListener('DOMContentLoaded', function() {
-            // Add custom CSS for hotspots
-            const style = document.createElement('style');
-            style.textContent = `
-                .hotspot-navigation {
-                    background-color: rgba(59, 130, 246, 0.8);
-                    border: 2px solid white;
-                    border-radius: 50%;
-                    width: 40px;
-                    height: 40px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-weight: bold;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-                }
-                
-                .hotspot-navigation:hover {
-                    background-color: rgba(59, 130, 246, 1);
-                    transform: scale(1.1);
-                    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-                }
-                
-                .hotspot-navigation::before {
-                    content: "→";
-                    font-size: 18px;
-                }
-            `;
-            document.head.appendChild(style);
-            
-            // Initialize the panorama viewer
-            initializePanorama();
-            
-            // Set up keyboard shortcuts (optional enhancement)
-            document.addEventListener('keydown', function(e) {
-                switch(e.key) {
-                    case 'h':
-                    case 'c':
-                        if (mapData.currentScene !== 'hallway') {
-                            viewer.loadScene('hallway');
-                        }
-                        break;
-                    case 'e':
-                        if (mapData.currentScene !== 'entrance') {
-                            viewer.loadScene('entrance');
-                        }
-                        break;
-                    case 'l':
-                        if (mapData.currentScene !== 'classroom') {
-                            viewer.loadScene('classroom');
-                        }
-                        break;
-                }
-            });
-        });
+            let viewer;
+            let tourConfig;
+            let currentFloor = 'floor1'; // Default floor
 
-        // Add smooth view change updates for better responsiveness
-        setInterval(function() {
-            if (viewer && viewer.getYaw) {
-                updateDirectionIndicator();
+            async function loadTour() {
+                try {
+                    const response = await fetch('tour-config.json');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    tourConfig = await response.json();
+                    console.log('Tour configuration loaded:', tourConfig);
+                    initializeViewer(tourConfig);
+                    await loadFloorPlan(currentFloor);
+                } catch (error) {
+                    console.error("Could not load tour configuration:", error);
+                    document.getElementById('panorama').innerText = 'Error: Could not load tour. Please check console for details.';
+                }
             }
-        }, 100); // Update direction every 100ms for smooth tracking
+
+            function initializeViewer(config) {
+                const firstSceneId = config.default.firstScene || Object.keys(config.scenes)[0];
+                
+                viewer = pannellum.viewer('panorama', {
+                    "default": {
+                        "firstScene": firstSceneId,
+                        "sceneFadeDuration": config.default.sceneFadeDuration || 1000,
+                        "autoLoad": true,
+                        "compass": false,
+                        "hotSpotDebug": false
+                    },
+                    "scenes": config.scenes
+                });
+
+                viewer.on('load', () => {
+                    const currentSceneId = viewer.getScene();
+                    updateActiveMarker(currentSceneId);
+                });
+            }
+
+            async function loadFloorPlan(floor) {
+                const floorplanContainer = document.getElementById('floorplan-svg');
+                try {
+                    const response = await fetch(`images/${floor}/floorplan.svg`);
+                    if (!response.ok) throw new Error('Floorplan not found');
+                    const svgData = await response.text();
+                    floorplanContainer.innerHTML = svgData;
+                    createMarkers(floor);
+                } catch (error) {
+                    console.warn(`Could not load floor plan for ${floor}:`, error);
+                    floorplanContainer.innerHTML = '<p style="color:white;padding:10px;">Floor plan not available.</p>';
+                }
+            }
+
+            function createMarkers(floor) {
+                const floorplanSvg = document.getElementById('floorplan-svg');
+
+                Object.keys(tourConfig.scenes).forEach(sceneId => {
+                    const scene = tourConfig.scenes[sceneId];
+                    if (scene.panorama && scene.panorama.includes(`/${floor}/`)) {
+                        if (scene.map && scene.map.x && scene.map.y) {
+                            const marker = document.createElement('div');
+                            marker.className = 'scene-marker';
+                            marker.id = `marker-${sceneId}`;
+                            marker.style.left = `${scene.map.x}px`;
+                            marker.style.top = `${scene.map.y}px`;
+                            marker.addEventListener('click', () => viewer.loadScene(sceneId));
+                            floorplanSvg.appendChild(marker);
+                        }
+                    }
+                });
+                updateActiveMarker(viewer.getScene());
+            }
+
+            function updateActiveMarker(sceneId) {
+                document.querySelectorAll('.scene-marker').forEach(marker => {
+                    marker.classList.remove('active');
+                });
+                const activeMarker = document.getElementById(`marker-${sceneId}`);
+                if (activeMarker) {
+                    activeMarker.classList.add('active');
+                }
+            }
+
+            loadTour();
+        });
     </script>
+
 </body>
 </html>
