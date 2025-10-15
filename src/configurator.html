@@ -499,14 +499,29 @@
             setupSceneModal();
             
             // Hotspot mode toggle
-            document.getElementById('add-hotspot-mode').addEventListener('click', toggleHotspotMode);
+            const hotspotBtn = document.getElementById('add-hotspot-mode');
+            if (hotspotBtn) {
+                hotspotBtn.addEventListener('click', toggleHotspotMode);
+            } else {
+                console.error('Hotspot mode button not found');
+            }
             
             // Tour settings
-            document.getElementById('first-scene-select').addEventListener('change', updateFirstScene);
-            document.getElementById('fade-duration-range').addEventListener('input', updateFadeDuration);
+            const firstSceneSelect = document.getElementById('first-scene-select');
+            if (firstSceneSelect) {
+                firstSceneSelect.addEventListener('change', updateFirstScene);
+            }
+            
+            const fadeDurationRange = document.getElementById('fade-duration-range');
+            if (fadeDurationRange) {
+                fadeDurationRange.addEventListener('input', updateFadeDuration);
+            }
             
             // JSON export
-            document.getElementById('copy-json').addEventListener('click', copyToClipboard);
+            const copyBtn = document.getElementById('copy-json');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', copyToClipboard);
+            }
         }
 
         /**
@@ -998,7 +1013,10 @@
                 };
                 
                 // Enable hotspot mode button
-                document.getElementById('add-hotspot-mode').disabled = false;
+                const hotspotBtn = document.getElementById('add-hotspot-mode');
+                if (hotspotBtn) {
+                    hotspotBtn.disabled = false;
+                }
                 
                 console.log(`Loaded scene in development mode: ${sceneId}`);
                 
@@ -1024,7 +1042,10 @@
                     setupMouseTracking();
                     
                     // Enable hotspot mode button
-                    document.getElementById('add-hotspot-mode').disabled = false;
+                    const hotspotBtn = document.getElementById('add-hotspot-mode');
+                    if (hotspotBtn) {
+                        hotspotBtn.disabled = false;
+                    }
                     
                     console.log(`Loaded scene in viewer: ${sceneId}`);
                 } catch (error) {
@@ -1044,7 +1065,10 @@
                     `;
                     
                     // Enable hotspot mode button even on error
-                    document.getElementById('add-hotspot-mode').disabled = false;
+                    const hotspotBtn = document.getElementById('add-hotspot-mode');
+                    if (hotspotBtn) {
+                        hotspotBtn.disabled = false;
+                    }
                 }
             }
             
@@ -1068,7 +1092,10 @@
             document.getElementById('viewer-empty-state').style.display = 'flex';
             
             // Disable hotspot mode
-            document.getElementById('add-hotspot-mode').disabled = true;
+            const hotspotBtn = document.getElementById('add-hotspot-mode');
+            if (hotspotBtn) {
+                hotspotBtn.disabled = true;
+            }
             
             updateAllUI();
         }
@@ -1384,13 +1411,16 @@
             setupHotspotClickHandling();
             
             // Enable hotspot adding button
-            document.getElementById('toggle-add-hotspots').disabled = false;
+            const hotspotBtn = document.getElementById('add-hotspot-mode');
+            if (hotspotBtn) {
+                hotspotBtn.disabled = false;
+            }
             
             // Update scenes list to show active scene
             updateScenesList();
             
-            // Redraw SVG markers to highlight current scene
-            drawSvgSceneMarkers();
+            // Redraw canvas markers to highlight current scene
+            drawFloorPlan();
             
             console.log(`Loaded scene: ${sceneId}`);
         }
@@ -1713,6 +1743,40 @@
         // UTILITY FUNCTIONS
         // ===========================
         
+        /**
+         * Show a temporary message to the user
+         */
+        function showMessage(message, type = 'info') {
+            // Create message element
+            const messageEl = document.createElement('div');
+            messageEl.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 text-white font-medium`;
+            
+            // Set colors based on type
+            switch (type) {
+                case 'success':
+                    messageEl.className += ' bg-green-600';
+                    break;
+                case 'error':
+                    messageEl.className += ' bg-red-600';
+                    break;
+                case 'warning':
+                    messageEl.className += ' bg-yellow-600';
+                    break;
+                default:
+                    messageEl.className += ' bg-blue-600';
+            }
+            
+            messageEl.textContent = message;
+            document.body.appendChild(messageEl);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.parentNode.removeChild(messageEl);
+                }
+            }, 3000);
+        }
+
         /**
          * Generate a simple scene ID from a title
          */
