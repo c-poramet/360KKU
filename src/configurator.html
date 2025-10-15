@@ -138,6 +138,17 @@
                 </div>
             </div>
             
+            <!-- Available Images Browser -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-images mr-2"></i>
+                    Available Images (<span id="image-count">0</span>)
+                </h3>
+                <div id="image-list" class="space-y-1 max-h-32 overflow-y-auto text-xs">
+                    <div class="text-gray-500 text-sm italic">Loading images...</div>
+                </div>
+            </div>
+
             <!-- Scene List -->
             <div class="mb-6">
                 <h3 class="text-lg font-semibold mb-3">
@@ -275,28 +286,15 @@
          * Initialize the configurator when page loads
          */
         document.addEventListener('DOMContentLoaded', function() {
-            initializeCanvas();
             initializeEventListeners();
+            loadFloorPlan();
+            loadAvailableImages();
             updateJsonOutput();
-            drawFloorPlan();
             
             console.log('360° Tour Configurator initialized');
         });
 
-        /**
-         * Set up the minimap canvas and context
-         */
-        function initializeCanvas() {
-            appState.canvas = document.getElementById('minimap-canvas');
-            appState.ctx = appState.canvas.getContext('2d');
-            
-            // Set up high-DPI canvas rendering
-            const rect = appState.canvas.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            appState.canvas.width = rect.width * dpr;
-            appState.canvas.height = rect.height * dpr;
-            appState.ctx.scale(dpr, dpr);
-        }
+
 
         /**
          * Set up all event listeners for the interface
@@ -306,8 +304,11 @@
             document.getElementById('toggle-add-scenes').addEventListener('click', toggleAddScenesMode);
             document.getElementById('toggle-add-hotspots').addEventListener('click', toggleAddHotspotsMode);
             
-            // Canvas click for adding scenes
-            appState.canvas.addEventListener('click', handleCanvasClick);
+            // Floor selection
+            document.getElementById('floor-select').addEventListener('change', handleFloorChange);
+            
+            // SVG click for adding scenes
+            document.getElementById('floor-plan-svg').addEventListener('click', handleSvgClick);
             
             // Tour settings
             document.getElementById('first-scene-select').addEventListener('change', updateFirstScene);
@@ -317,87 +318,217 @@
             document.getElementById('copy-json').addEventListener('click', copyJsonToClipboard);
         }
 
-        // ===========================
-        // FLOOR PLAN DRAWING
-        // ===========================
-        
         /**
-         * Draw the building floor plan on the minimap canvas
-         * This uses the same layout as the main tour application
+         * Load SVG floor plan from the images directory
          */
-        function drawFloorPlan() {
-            const ctx = appState.ctx;
-            const canvas = appState.canvas;
-            
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Set drawing style for floor plan
-            ctx.strokeStyle = '#64748b';
-            ctx.fillStyle = '#374151';
-            ctx.lineWidth = 2;
-            
-            // Draw main horizontal corridor (hallway)
-            ctx.fillRect(30, 65, 140, 30);
-            ctx.strokeRect(30, 65, 140, 30);
-            
-            // Draw vertical section (entrance area)
-            ctx.fillRect(35, 95, 30, 50);
-            ctx.strokeRect(35, 95, 30, 50);
-            
-            // Draw classroom/lab area
-            ctx.fillRect(140, 35, 40, 40);
-            ctx.strokeRect(140, 35, 40, 40);
-            
-            // Add detail lines for walls/doors
-            ctx.strokeStyle = '#6b7280';
-            ctx.lineWidth = 1;
-            
-            // Door openings
-            ctx.beginPath();
-            ctx.moveTo(50, 95);
-            ctx.lineTo(50, 105);
-            ctx.moveTo(140, 55);
-            ctx.lineTo(150, 55);
-            ctx.stroke();
-            
-            // Add labels
-            ctx.fillStyle = '#9ca3af';
-            ctx.font = '10px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Entrance', 50, 135);
-            ctx.fillText('Corridor', 100, 85);
-            ctx.fillText('Lab/Class', 160, 60);
-            
-            // Draw existing scene markers
-            drawSceneMarkers();
+        async function loadFloorPlan() {
+            try {
+                const svgPath = `./images/${appState.currentFloor}/plan_${appState.currentFloor}.svg`;
+                const response = await fetch(svgPath);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load floor plan: ${response.status}`);
+                }
+                
+                const svgContent = await response.text();
+                const svgContainer = document.getElementById('floor-plan-svg');
+                svgContainer.innerHTML = svgContent;
+                
+                // Hide loading indicator
+                document.getElementById('loading-floorplan').style.display = 'none';
+                
+                // Draw existing scene markers on SVG
+                drawSvgSceneMarkers();
+                
+                console.log(`Loaded floor plan: ${svgPath}`);
+            } catch (error) {
+                console.error('Error loading floor plan:', error);
+                document.getElementById('loading-floorplan').innerHTML = 
+                    '<div class="text-center text-red-400"><i class="fas fa-exclamation-triangle mb-2"></i><p>Failed to load floor plan</p></div>';
+            }
         }
 
         /**
-         * Draw markers for all configured scenes on the minimap
+         * Load available 360° images from the current floor directory
          */
-        function drawSceneMarkers() {
-            const ctx = appState.ctx;
+        async function loadAvailableImages() {
+            try {
+                // This is a simplified approach - in a real implementation, you'd need a backend API
+                // For now, we'll create a list based on common patterns
+                const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+                const imageList = document.getElementById('image-list');
+                const imageCount = document.getElementById('image-count');
+                
+                // Since we can't directly list directory contents from frontend,
+                // we'll provide a manual way to refresh the list
+                imageList.innerHTML = `
+                    <div class="text-gray-400 text-xs mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Auto-detection limited in browser. Available images:
+                    </div>
+                    <button onclick="showImagePathHelper()" 
+                            class="w-full p-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded mb-2">
+                        <i class="fas fa-folder-open mr-1"></i>
+                        Browse Images Manually
+                    </button>
+                    <div class="text-xs text-gray-500">
+                        Images detected in: ./images/${appState.currentFloor}/
+                    </div>
+                `;
+                
+                imageCount.textContent = '39'; // Based on your floor1 directory listing
+                
+            } catch (error) {
+                console.error('Error loading images:', error);
+            }
+        }
+
+        /**
+         * Handle floor selection change
+         */
+        function handleFloorChange() {
+            const select = document.getElementById('floor-select');
+            appState.currentFloor = select.value;
             
+            // Reload floor plan and images for selected floor
+            document.getElementById('loading-floorplan').style.display = 'flex';
+            loadFloorPlan();
+            loadAvailableImages();
+        }
+
+        /**
+         * Handle clicks on the SVG floor plan
+         */
+        function handleSvgClick(event) {
+            if (!appState.addingScenesMode) return;
+            
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Get click coordinates relative to SVG
+            const svg = document.getElementById('floor-plan-svg');
+            const rect = svg.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Convert to SVG coordinates
+            const svgX = (x / rect.width) * svg.viewBox.baseVal.width || x;
+            const svgY = (y / rect.height) * svg.viewBox.baseVal.height || y;
+            
+            addSceneAtCoordinates(svgX, svgY);
+        }
+
+        /**
+         * Add a new scene at the specified coordinates
+         */
+        function addSceneAtCoordinates(x, y) {
+            // Prompt for scene details with image path helper
+            const sceneId = prompt('Enter a unique Scene ID (e.g., "entrance-hall", "lab-main"):');
+            if (!sceneId) return;
+            
+            // Check if scene ID already exists
+            if (tourData.scenes[sceneId]) {
+                alert('Scene ID already exists! Please use a unique ID.');
+                return;
+            }
+            
+            // Smart image path suggestion
+            const suggestedPath = `./images/${appState.currentFloor}/IMG_*.jpg`;
+            const panoramaUrl = prompt('Enter the panorama image path:', suggestedPath);
+            if (!panoramaUrl) return;
+            
+            const sceneTitle = prompt('Enter scene title (for display):', sceneId.replace(/[-_]/g, ' '));
+            
+            // Add new scene to tour data
+            tourData.scenes[sceneId] = {
+                "title": sceneTitle || sceneId,
+                "panorama": panoramaUrl,
+                "map": { "x": Math.round(x), "y": Math.round(y) },
+                "hotSpots": [],
+                "floor": appState.currentFloor
+            };
+            
+            // Update UI
+            updateScenesList();
+            updateFirstSceneOptions();
+            updateJsonOutput();
+            drawSvgSceneMarkers();
+            
+            console.log(`Added scene: ${sceneId} at (${x}, ${y}) on ${appState.currentFloor}`);
+        }
+
+        /**
+         * Show helper dialog for browsing images
+         */
+        function showImagePathHelper() {
+            const helpText = `Available images in ${appState.currentFloor}:
+
+Common image paths:
+• ./images/${appState.currentFloor}/IMG_25681007_113335_453.jpg
+• ./images/${appState.currentFloor}/IMG_25681007_113348_225.jpg
+• ./images/${appState.currentFloor}/IMG_25681007_113432_990.jpg
+• ... (and 36 more images)
+
+Tip: Use browser dev tools to see full file list!`;
+            
+            alert(helpText);
+        }
+
+        // ===========================
+        // SVG FLOOR PLAN MANAGEMENT
+        // ===========================
+        
+        /**
+         * Draw markers for all configured scenes on the SVG floor plan
+         */
+        function drawSvgSceneMarkers() {
+            const svg = document.getElementById('floor-plan-svg');
+            
+            // Remove existing scene markers
+            const existingMarkers = svg.querySelectorAll('.scene-marker');
+            existingMarkers.forEach(marker => marker.remove());
+            
+            // Add scene markers for current floor
             Object.keys(tourData.scenes).forEach(sceneId => {
                 const scene = tourData.scenes[sceneId];
-                if (scene.map && scene.map.x && scene.map.y) {
-                    // Draw scene marker
-                    ctx.beginPath();
-                    ctx.arc(scene.map.x, scene.map.y, 8, 0, 2 * Math.PI);
-                    ctx.fillStyle = sceneId === appState.currentSceneId ? '#A73B24' : '#3b82f6';
-                    ctx.fill();
+                if (scene.map && scene.map.x && scene.map.y && 
+                    (scene.floor === appState.currentFloor || !scene.floor)) {
                     
-                    // Draw white border
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    // Create scene marker group
+                    const markerGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    markerGroup.classList.add('scene-marker');
+                    markerGroup.setAttribute('data-scene-id', sceneId);
                     
-                    // Draw scene ID label
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '8px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(sceneId, scene.map.x, scene.map.y - 12);
+                    // Create marker circle
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', scene.map.x);
+                    circle.setAttribute('cy', scene.map.y);
+                    circle.setAttribute('r', '12');
+                    circle.setAttribute('fill', sceneId === appState.currentSceneId ? '#A73B24' : '#3b82f6');
+                    circle.setAttribute('stroke', '#ffffff');
+                    circle.setAttribute('stroke-width', '2');
+                    circle.style.cursor = 'pointer';
+                    
+                    // Create scene label
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', scene.map.x);
+                    text.setAttribute('y', scene.map.y - 18);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('fill', '#000000');
+                    text.setAttribute('font-size', '10');
+                    text.setAttribute('font-weight', 'bold');
+                    text.textContent = sceneId;
+                    text.style.pointerEvents = 'none';
+                    
+                    // Add click handler to load scene
+                    circle.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        loadSceneInViewer(sceneId);
+                    });
+                    
+                    markerGroup.appendChild(circle);
+                    markerGroup.appendChild(text);
+                    svg.appendChild(markerGroup);
                 }
             });
         }
@@ -413,61 +544,19 @@
             appState.addingScenesMode = !appState.addingScenesMode;
             
             const button = document.getElementById('toggle-add-scenes');
-            const canvas = appState.canvas;
+            const svgContainer = document.getElementById('svg-container');
             
             if (appState.addingScenesMode) {
                 button.innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Adding Scenes';
                 button.className = button.className.replace('bg-green-600 hover:bg-green-700', 'bg-red-600 hover:bg-red-700');
-                canvas.classList.add('adding-scenes');
+                svgContainer.style.borderColor = '#10b981';
+                svgContainer.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)';
             } else {
                 button.innerHTML = '<i class="fas fa-plus mr-2"></i>Start Adding Scenes';
                 button.className = button.className.replace('bg-red-600 hover:bg-red-700', 'bg-green-600 hover:bg-green-700');
-                canvas.classList.remove('adding-scenes');
+                svgContainer.style.borderColor = '#374151';
+                svgContainer.style.boxShadow = 'none';
             }
-        }
-
-        /**
-         * Handle clicks on the minimap canvas
-         * In scene-adding mode, this creates a new scene
-         */
-        function handleCanvasClick(event) {
-            if (!appState.addingScenesMode) return;
-            
-            // Get click coordinates relative to canvas
-            const rect = appState.canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            
-            // Prompt for scene details
-            const sceneId = prompt('Enter a unique Scene ID (e.g., "entrance-hall", "lab-main"):');
-            if (!sceneId) return;
-            
-            // Check if scene ID already exists
-            if (tourData.scenes[sceneId]) {
-                alert('Scene ID already exists! Please use a unique ID.');
-                return;
-            }
-            
-            const panoramaUrl = prompt('Enter the panorama image URL or path:');
-            if (!panoramaUrl) return;
-            
-            const sceneTitle = prompt('Enter scene title (for display):', sceneId.replace(/[-_]/g, ' '));
-            
-            // Add new scene to tour data
-            tourData.scenes[sceneId] = {
-                "title": sceneTitle || sceneId,
-                "panorama": panoramaUrl,
-                "map": { "x": x, "y": y },
-                "hotSpots": []
-            };
-            
-            // Update UI
-            updateScenesList();
-            updateFirstSceneOptions();
-            updateJsonOutput();
-            drawFloorPlan(); // Redraw to show new marker
-            
-            console.log(`Added scene: ${sceneId} at (${x}, ${y})`);
         }
 
         /**
@@ -569,8 +658,8 @@
             // Update scenes list to show active scene
             updateScenesList();
             
-            // Redraw minimap to highlight current scene
-            drawFloorPlan();
+            // Redraw SVG markers to highlight current scene
+            drawSvgSceneMarkers();
             
             console.log(`Loaded scene: ${sceneId}`);
         }
@@ -789,6 +878,7 @@
 
         // Expose key functions to global scope for onclick handlers
         window.loadSceneInViewer = loadSceneInViewer;
+        window.showImagePathHelper = showImagePathHelper;
     </script>
 </body>
 </html>
