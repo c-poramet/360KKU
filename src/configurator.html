@@ -1358,7 +1358,7 @@
         }
 
         /**
-         * Clear the Pannellum viewer and show empty state
+         * Clears the Pannellum viewer and resets associated state
          */
         function clearPannellumViewer() {
             if (appState.viewer) {
@@ -1379,6 +1379,52 @@
             }
             
             updateAllUI();
+        }
+
+        /**
+         * Runs a quick add/remove test to ensure hotspot rendering is working.
+         * This is for debugging and does not save changes.
+         */
+        function runHotspotRenderTest() {
+            console.log('%c[TEST] Running hotspot render test...', 'color: #f9a8d4');
+            
+            if (!appState.currentSceneId) return;
+
+            const scene = tourData.scenes[appState.currentSceneId];
+            const originalHotspotsCount = scene.hotSpots.length;
+
+            // 1. Define a dummy hotspot
+            const dummyHotspot = {
+                pitch: 0,
+                yaw: 15,
+                type: 'scene',
+                text: 'Render Test',
+                target: Object.keys(tourData.scenes).find(id => id !== appState.currentSceneId) || appState.currentSceneId
+            };
+
+            // 2. Add the hotspot and re-render
+            scene.hotSpots.push(dummyHotspot);
+            console.log('[TEST] Added dummy hotspot. Re-rendering...');
+            renderHotspots();
+
+            // 3. Immediately remove the hotspot and render again
+            // Use a short timeout to allow the DOM to update for visual confirmation if needed.
+            setTimeout(() => {
+                // Find and remove the dummy hotspot
+                const hotspotIndex = scene.hotSpots.findIndex(h => h.text === 'Render Test');
+                if (hotspotIndex > -1) {
+                    scene.hotSpots.splice(hotspotIndex, 1);
+                }
+                
+                console.log('[TEST] Removed dummy hotspot. Re-rendering to restore state...');
+                renderHotspots();
+
+                if (scene.hotSpots.length === originalHotspotsCount) {
+                    console.log('%c[TEST] Hotspot render test completed successfully.', 'color: #a3e635');
+                } else {
+                    console.error('[TEST] Test failed: Hotspot count mismatch after test.');
+                }
+            }, 100);
         }
 
         // ===========================
@@ -2071,7 +2117,7 @@
             setupMouseTracking();
             
             // Set up hotspot click handling
-            setupHotspotClickHandling();
+            setupHotspotClickHandler();
             
             // Enable hotspot adding button
             const hotspotBtn = document.getElementById('add-hotspot-mode');
