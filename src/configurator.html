@@ -1227,7 +1227,7 @@
                 console.log(`Loaded scene in development mode: ${sceneId}`);
                 
             } else {
-                // Production mode - try to load actual panorama
+                // Production mode - load actual panorama
                 const config = {
                     "type": "equirectangular",
                     "panorama": scene.panorama,
@@ -1238,118 +1238,61 @@
                 };
                 
                 try {
+                    console.log(`🔄 Initializing Pannellum viewer for scene: ${sceneId}`);
+                    
                     // Initialize Pannellum viewer
                     appState.viewer = pannellum.viewer('panorama-viewer', config);
                     
-                    // Flag to track if load event fired
-                    let loadEventFired = false;
-                    
-                    // Remove any previous load event listeners
+                    // Remove any previous load event listeners to prevent duplicates
                     appState.viewer.off('load');
                     
-                    // Wait for viewer to fully load before setting up interactions
+                    // *** SINGLE SOURCE OF TRUTH: Wait for viewer 'load' event ***
+                    // This is the ONLY place where renderHotspots() is called after scene load
                     appState.viewer.on('load', function() {
-                        loadEventFired = true;
-                        console.log(`✅ Scene loaded successfully via 'load' event: ${sceneId}`);
+                        console.log(`✅ Scene loaded successfully: ${sceneId}`);
                         console.log(`🔄 Setting up interactions and rendering hotspots...`);
                         
-                        // Set up hotspot click handler
+                        // Set up viewer interactions (requires loaded viewer)
                         setupHotspotClickHandler();
-                        
-                        // Set up mouse tracking for coordinates
                         setupMouseTracking();
                         
                         // Get hotspots for current scene
                         const currentScene = tourData.scenes[sceneId];
                         const currentHotspots = currentScene?.hotSpots || [];
-                        console.log(`📍 Found ${currentHotspots.length} hotspots to render for scene: ${sceneId}`);
+                        console.log(`📍 Rendering ${currentHotspots.length} hotspots for scene: ${sceneId}`);
                         
-                        // Render existing hotspots AFTER viewer is fully loaded
+                        // Render hotspots - this is the ONLY call after scene switch
                         renderHotspots();
                         
-                        console.log(`✅ Hotspots rendering complete for scene: ${sceneId}`);
+                        console.log(`✅ Scene setup complete: ${sceneId}`);
                     });
                     
-                    // FALLBACK: If load event doesn't fire within 1 second, render anyway
-                    // This handles cases where the panorama is cached
-                    setTimeout(() => {
-                        if (!loadEventFired) {
-                            console.log(`⚠️ Load event didn't fire, using fallback for scene: ${sceneId}`);
-                            
-                            // Set up interactions
-                            setupHotspotClickHandler();
-                            setupMouseTracking();
-                            
-                            // Render hotspots
-                            const currentScene = tourData.scenes[sceneId];
-                            const currentHotspots = currentScene?.hotSpots || [];
-                            console.log(`📍 Fallback: Found ${currentHotspots.length} hotspots for scene: ${sceneId}`);
-                            renderHotspots();
-                            
-                            console.log(`✅ Fallback rendering complete for scene: ${sceneId}`);
-                        }
-                    }, 1000);
-                    
-                    // ADDITIONAL FIX: Keep checking viewer state and force re-render when ready
-                    // This fixes the visibility issue where hotspots exist but aren't visible
-                    let retryCount = 0;
-                    const maxRetries = 10;
-                    const retryInterval = 300;
-                    
-                    const forceRenderWhenReady = () => {
-                        retryCount++;
-                        console.log(`🔄 Attempt ${retryCount}: Checking if viewer is ready for forced re-render...`);
-                        
-                        if (appState.viewer && appState.viewer.isLoaded && appState.viewer.isLoaded()) {
-                            console.log(`✅ Viewer confirmed loaded! Forcing hotspot re-render...`);
-                            setTimeout(() => renderHotspots(), 100);
-                        } else if (retryCount < maxRetries) {
-                            console.log(`⏳ Viewer not ready yet, will retry in ${retryInterval}ms...`);
-                            setTimeout(forceRenderWhenReady, retryInterval);
-                        } else {
-                            console.log(`⚠️ Max retries reached, forcing render anyway...`);
-                            setTimeout(() => renderHotspots(), 100);
-                        }
-                    };
-                    
-                    setTimeout(forceRenderWhenReady, 500);
-                    
-                    // Also set up error handler
+                    // Set up error handler
                     appState.viewer.on('error', function(error) {
                         console.error(`❌ Error loading panorama for scene ${sceneId}:`, error);
                     });
                     
-                    // Enable hotspot mode button immediately
+                    // Enable hotspot mode button
                     const hotspotBtn = document.getElementById('add-hotspot-mode');
                     if (hotspotBtn) {
                         hotspotBtn.disabled = false;
                     }
                     
-                    console.log(`🔄 Initializing Pannellum viewer for scene: ${sceneId}`);
                 } catch (error) {
-                    console.error('Error loading scene in viewer:', error);
+                    console.error('Error initializing viewer:', error);
                     
-                    // Fallback to development mode
+                    // Show error state
                     const viewerEl = document.getElementById('panorama-viewer');
                     viewerEl.innerHTML = `
                         <div class="flex items-center justify-center h-full bg-red-900 bg-opacity-20 border-2 border-red-600 rounded-lg">
                             <div class="text-center p-8">
                                 <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
-                                <h3 class="text-xl font-semibold text-white mb-2">Image Load Error</h3>
-                                <p class="text-red-300 mb-4">Could not load: ${scene.panorama}</p>
-                                <p class="text-gray-400 text-sm">Hotspot mode is still available for testing</p>
+                                <h3 class="text-xl font-semibold text-white mb-2">Error Loading Scene</h3>
+                                <p class="text-red-300 mb-4">${error.message || 'Unknown error'}</p>
+                                <p class="text-gray-400 text-sm">Path: ${scene.panorama}</p>
                             </div>
                         </div>
                     `;
-                    
-                    // Enable hotspot mode button even on error
-                    const hotspotBtn = document.getElementById('add-hotspot-mode');
-                    if (hotspotBtn) {
-                        hotspotBtn.disabled = false;
-                    }
-                    
-                    // Render existing hotspots even in error mode
-                    setTimeout(() => renderHotspots(), 100);
                 }
             }
             
@@ -1910,6 +1853,7 @@
         
         /**
          * Update all UI elements to reflect current application state
+         * REFACTORED: No longer calls renderHotspots() - that's handled by viewer 'load' event
          */
         function updateAllUI() {
             updateScenesList();
@@ -1923,10 +1867,9 @@
                 drawFloorPlan(); // Redraw canvas with updated markers
             }
             
-            // Render hotspots in viewer if scene is loaded
-            if (appState.currentSceneId) {
-                setTimeout(() => renderHotspots(), 100);
-            }
+            // NOTE: We do NOT call renderHotspots() here!
+            // Hotspots are rendered by the viewer's 'load' event in loadSceneInViewer()
+            // This prevents the race condition where we try to add hotspots before the viewer is ready
         }
 
         /**
