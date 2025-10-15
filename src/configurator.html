@@ -10,14 +10,23 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         /* Custom styles for the visual tour configurator */
-        #minimap-canvas {
+        #floor-plan-container {
             border: 3px solid #374151;
             border-radius: 0.75rem;
             cursor: crosshair;
             background: #f8fafc;
+            width: 100%;
+            height: auto;
+            position: relative;
         }
         
-        #minimap-canvas:hover {
+        #floor-plan-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        #floor-plan-container:hover {
             border-color: #A73B24;
             box-shadow: 0 0 0 3px rgba(167, 59, 36, 0.2);
         }
@@ -242,9 +251,11 @@
                     </div>
                 </div>
                 
-                <!-- Minimap Canvas -->
+                <!-- Floor Plan SVG -->
                 <div class="mb-4 relative">
-                    <canvas id="minimap-canvas" class="w-full h-64"></canvas>
+                    <div id="floor-plan-container" class="w-full" style="height: 350px;">
+                        <svg id="floor-plan-svg" preserveAspectRatio="xMidYMid meet"></svg>
+                    </div>
                     <div id="minimap-overlay" class="absolute inset-0 flex items-center justify-center bg-gray-700 bg-opacity-75 rounded-lg">
                         <div class="text-center text-gray-300">
                             <i class="fas fa-image text-4xl mb-3"></i>
@@ -589,29 +600,22 @@
         // NOTE: Removed duplicate DOMContentLoaded listener - see end of script for single entry point
         
         /**
-         * Initialize the floor plan canvas and set up high-DPI rendering
+         * Initialize the floor plan SVG container
          */
-        function initializeCanvas() {
-            appState.canvas = document.getElementById('minimap-canvas');
-            appState.ctx = appState.canvas.getContext('2d');
+        function initializeFloorPlan() {
+            appState.floorPlanContainer = document.getElementById('floor-plan-container');
+            appState.floorPlanSvg = document.getElementById('floor-plan-svg');
             
-            // Set up high-DPI canvas for crisp rendering
-            if (appState.canvas && appState.ctx) {
-                const rect = appState.canvas.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
+            if (appState.floorPlanContainer && appState.floorPlanSvg) {
+                // Set viewBox to match container dimensions
+                const rect = appState.floorPlanContainer.getBoundingClientRect();
+                appState.floorPlanSvg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
                 
-                // Set canvas internal dimensions with DPI scaling for crispness
-                appState.canvas.width = rect.width * dpr;
-                appState.canvas.height = rect.height * dpr;
+                // Store dimensions for calculations
+                appState.svgWidth = rect.width;
+                appState.svgHeight = rect.height;
                 
-                // Scale the context to match DPI
-                appState.ctx.scale(dpr, dpr);
-                
-                // Store display dimensions for drawing calculations
-                appState.canvasDisplayWidth = rect.width;
-                appState.canvasDisplayHeight = rect.height;
-                
-                console.log(`Canvas initialized: display=${rect.width}x${rect.height}, internal=${appState.canvas.width}x${appState.canvas.height}, DPR=${dpr}`);
+                console.log(`Floor plan SVG initialized: ${rect.width}x${rect.height}`);
             }
         }
 
@@ -622,8 +626,8 @@
             // Floor plan file upload
             setupFloorPlanUpload();
             
-            // Canvas clicks for adding scenes
-            appState.canvas.addEventListener('click', handleCanvasClick);
+            // SVG clicks for adding scenes
+            appState.floorPlanSvg.addEventListener('click', handleSvgClick);
             
             // Scene modal management
             setupSceneModal();
@@ -689,7 +693,7 @@
         }
 
         /**
-         * Handle floor plan image file selection and load it onto canvas
+         * Handle floor plan image file selection and load it into SVG
          */
         function handleFloorPlanFile(event) {
             const file = event.target.files[0];
@@ -702,10 +706,11 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    // Store the floor plan image
+                    // Store the floor plan image and URL
                     appState.floorPlanImage = img;
+                    appState.floorPlanUrl = e.target.result;
                     
-                    // Draw the floor plan on canvas
+                    // Draw the floor plan in SVG
                     drawFloorPlan();
                     
                     // Hide the overlay
@@ -719,62 +724,42 @@
         }
 
         /**
-         * Draw the floor plan image and all scene markers on the canvas
-         * FIXED: High-DPI crisp rendering with proper aspect ratio and fit
+         * Display the floor plan image in the SVG and update viewBox for proper scaling
          */
         function drawFloorPlan() {
-            const ctx = appState.ctx;
-            const canvas = appState.canvas;
+            const svg = appState.floorPlanSvg;
             
-            // Check if canvas and context are available
-            if (!canvas || !ctx) {
-                console.warn('Canvas or context not available for drawing');
+            // Check if SVG is available
+            if (!svg) {
+                console.warn('SVG element not available for drawing floor plan');
                 return;
             }
             
-            // Use display dimensions for calculations (not DPI-scaled internal dimensions)
-            const canvasWidth = appState.canvasDisplayWidth || canvas.getBoundingClientRect().width;
-            const canvasHeight = appState.canvasDisplayHeight || canvas.getBoundingClientRect().height;
+            // Clear existing content
+            while (svg.firstChild) {
+                svg.removeChild(svg.firstChild);
+            }
             
-            // Clear the entire canvas using display dimensions
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            
-            // Draw the floor plan image if available
-            if (appState.floorPlanImage) {
+            // Add floor plan image if available
+            if (appState.floorPlanImage && appState.floorPlanUrl) {
                 const imgWidth = appState.floorPlanImage.width;
                 const imgHeight = appState.floorPlanImage.height;
                 
-                // Calculate aspect ratios using display dimensions
-                const canvasAspect = canvasWidth / canvasHeight;
-                const imgAspect = imgWidth / imgHeight;
+                // Set viewBox to match image dimensions for perfect scaling
+                svg.setAttribute('viewBox', `0 0 ${imgWidth} ${imgHeight}`);
                 
-                let drawWidth, drawHeight, offsetX, offsetY;
+                // Create image element in SVG
+                const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+                image.setAttribute('href', appState.floorPlanUrl);
+                image.setAttribute('width', imgWidth);
+                image.setAttribute('height', imgHeight);
+                image.setAttribute('x', 0);
+                image.setAttribute('y', 0);
                 
-                // Fit image to canvas while maintaining aspect ratio
-                if (imgAspect > canvasAspect) {
-                    // Image is wider - fit to width
-                    drawWidth = canvasWidth;
-                    drawHeight = canvasWidth / imgAspect;
-                    offsetX = 0;
-                    offsetY = (canvasHeight - drawHeight) / 2;
-                } else {
-                    // Image is taller - fit to height
-                    drawHeight = canvasHeight;
-                    drawWidth = canvasHeight * imgAspect;
-                    offsetX = (canvasWidth - drawWidth) / 2;
-                    offsetY = 0;
-                }
+                // Add image to SVG
+                svg.appendChild(image);
                 
-                console.log(`Drawing floor plan: display=${canvasWidth}x${canvasHeight}, image=${imgWidth}x${imgHeight}, draw=${drawWidth.toFixed(1)}x${drawHeight.toFixed(1)} at (${offsetX.toFixed(1)}, ${offsetY.toFixed(1)})`);
-                
-                // Draw with proper aspect ratio and centering
-                ctx.drawImage(
-                    appState.floorPlanImage, 
-                    offsetX, 
-                    offsetY, 
-                    drawWidth, 
-                    drawHeight
-                );
+                console.log(`SVG floor plan displayed: image=${imgWidth}x${imgHeight}`);
             }
             
             // Draw all scene markers
@@ -785,63 +770,94 @@
          * Draw visual markers for all created scenes on the floor plan
          */
         function drawSceneMarkers() {
-            const ctx = appState.ctx;
+            const svg = appState.floorPlanSvg;
+            
+            if (!svg) {
+                console.warn('SVG element not available for drawing markers');
+                return;
+            }
+            
+            // Remove any existing markers
+            const existingMarkers = svg.querySelectorAll('.scene-marker');
+            existingMarkers.forEach(marker => svg.removeChild(marker));
             
             Object.keys(tourData.scenes).forEach(sceneId => {
                 const scene = tourData.scenes[sceneId];
                 if (scene.map && scene.map.x !== undefined && scene.map.y !== undefined) {
-                    // Marker colors: active scene is red, others are blue
+                    // Marker colors: active scene is red, others are brown
                     const isActive = sceneId === appState.currentSceneId;
                     const markerColor = isActive ? '#dc2626' : '#A73B24';
                     const borderColor = isActive ? '#fbbf24' : '#ffffff';
                     
-                    // Draw marker circle
-                    ctx.beginPath();
-                    ctx.arc(scene.map.x, scene.map.y, 10, 0, 2 * Math.PI);
-                    ctx.fillStyle = markerColor;
-                    ctx.fill();
+                    // Create a group for the marker
+                    const markerGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    markerGroup.classList.add('scene-marker');
+                    markerGroup.dataset.sceneId = sceneId;
                     
-                    // Draw border
-                    ctx.beginPath();
-                    ctx.arc(scene.map.x, scene.map.y, 10, 0, 2 * Math.PI);
-                    ctx.strokeStyle = borderColor;
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
+                    // Create marker circle
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', scene.map.x);
+                    circle.setAttribute('cy', scene.map.y);
+                    circle.setAttribute('r', '10');
+                    circle.setAttribute('fill', markerColor);
+                    circle.setAttribute('stroke', borderColor);
+                    circle.setAttribute('stroke-width', '3');
+                    markerGroup.appendChild(circle);
                     
-                    // Draw scene ID label
-                    ctx.fillStyle = '#000000';
-                    ctx.font = 'bold 10px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(sceneId, scene.map.x, scene.map.y - 16);
+                    // Create text label
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', scene.map.x);
+                    text.setAttribute('y', scene.map.y - 16);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('fill', '#ffffff');
+                    text.setAttribute('font-weight', 'bold');
+                    text.setAttribute('font-size', '10px');
+                    text.textContent = sceneId;
+                    markerGroup.appendChild(text);
+                    
+                    // Add click event
+                    markerGroup.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        loadSceneInViewer(sceneId);
+                    });
+                    
+                    // Add to SVG
+                    svg.appendChild(markerGroup);
                 }
             });
         }
 
         /**
-         * Handle clicks on the floor plan canvas to add/edit scenes
+         * Handle clicks on the floor plan SVG to add/edit scenes
          */
-        function handleCanvasClick(event) {
+        function handleSvgClick(event) {
             if (!appState.floorPlanImage) {
                 alert('Please upload a floor plan image first.');
                 return;
             }
             
-            // Get click coordinates relative to canvas
-            const rect = appState.canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            
-            // Check if we clicked on an existing scene marker
-            const clickedScene = findSceneAtCoordinates(x, y);
-            
-            if (clickedScene) {
-                // Edit existing scene
-                openSceneModal(clickedScene);
-            } else {
-                // Create new scene at clicked coordinates
-                appState.clickCoordinates = { x, y };
-                openSceneModal(null);
+            // Don't process if clicked on a marker (those have their own handlers)
+            if (event.target.closest('.scene-marker')) {
+                return;
             }
+            
+            // Get SVG element and its CTM (Current Transformation Matrix)
+            const svg = appState.floorPlanSvg;
+            const svgRect = svg.getBoundingClientRect();
+            
+            // Calculate click position in SVG coordinates
+            const point = svg.createSVGPoint();
+            point.x = event.clientX - svgRect.left;
+            point.y = event.clientY - svgRect.top;
+            
+            // Transform point from screen coordinates to SVG coordinates
+            const svgPoint = point.matrixTransform(svg.getScreenCTM().inverse());
+            const x = svgPoint.x;
+            const y = svgPoint.y;
+            
+            // Create new scene at clicked coordinates
+            appState.clickCoordinates = { x, y };
+            openSceneModal(null);
         }
 
         /**
@@ -2221,12 +2237,12 @@
             // Check for auto-saved data first
             const hasAutoSave = promptRestoreAutoSave();
             
-            // Initialize canvas
-            appState.canvas = document.getElementById('minimap-canvas');
-            if (appState.canvas) {
-                appState.ctx = appState.canvas.getContext('2d');
-            } else {
-                console.error('Canvas element not found');
+            // Initialize floor plan SVG
+            appState.floorPlanContainer = document.getElementById('floor-plan-container');
+            appState.floorPlanSvg = document.getElementById('floor-plan-svg');
+            
+            if (!appState.floorPlanSvg) {
+                console.error('Floor plan SVG element not found');
                 return;
             }
             
@@ -2235,6 +2251,9 @@
             setupSceneModal();
             setupHotspotClickHandler();
             setupMouseTracking();
+            
+            // Set up SVG click handler
+            appState.floorPlanSvg.addEventListener('click', handleSvgClick);
             
             // Initial UI update
             updateAllUI();
