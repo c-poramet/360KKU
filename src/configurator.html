@@ -316,8 +316,25 @@
             </h2>
             <div class="flex items-center space-x-3">
                 <div class="text-sm text-gray-400">
-                    Auto-updating • Ready for copy-paste
+                    Auto-updating • <span id="auto-save-status" class="text-green-400">
+                        <i class="fas fa-shield-alt"></i> Auto-saved
+                    </span>
                 </div>
+                <button onclick="exportConfiguration()" 
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-lg">
+                    <i class="fas fa-download mr-1"></i>
+                    Export
+                </button>
+                <button onclick="importConfiguration()" 
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors shadow-lg">
+                    <i class="fas fa-upload mr-1"></i>
+                    Import
+                </button>
+                <button onclick="clearAutoSave()" 
+                        class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
+                    <i class="fas fa-trash mr-1"></i>
+                    Clear Save
+                </button>
                 <button id="copy-json" 
                         class="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors shadow-lg">
                     <i class="fas fa-copy mr-2"></i>
@@ -917,6 +934,9 @@
             updateAllUI();
             closeSceneModal();
             
+            // Auto-save changes
+            autoSave();
+            
             console.log(`${appState.editingSceneId ? 'Updated' : 'Created'} scene: ${sceneId}`);
         }
 
@@ -942,6 +962,9 @@
                 // Update UI
                 updateAllUI();
                 closeSceneModal();
+                
+                // Auto-save changes
+                autoSave();
                 
                 console.log(`Deleted scene: ${appState.editingSceneId}`);
             }
@@ -1407,6 +1430,9 @@
             // Update UI
             updateAllUI();
             
+            // Auto-save changes
+            autoSave();
+            
             // Close modal
             closeHotspotModal();
             
@@ -1750,6 +1776,7 @@
             const select = document.getElementById('first-scene-select');
             tourData.default.firstScene = select.value;
             updateJsonOutput();
+            autoSave();
         }
 
         /**
@@ -1759,6 +1786,7 @@
             const input = document.getElementById('fade-duration');
             tourData.default.sceneFadeDuration = parseInt(input.value) || 1000;
             updateJsonOutput();
+            autoSave();
         }
 
         // ===========================
@@ -1843,6 +1871,7 @@
                                     appState.currentSceneId = null;
                                     appState.hotspotMode = false;
                                     updateAllUI();
+                                    autoSave();
                                     showMessage('Configuration imported successfully!', 'success');
                                 }
                             } else {
@@ -1926,8 +1955,112 @@
                 appState.currentSceneId = null;
                 appState.hotspotMode = false;
                 updateAllUI();
+                autoSave();
                 showMessage('Configuration reset to defaults', 'info');
             }
+        }
+
+        // ===========================
+        // AUTO-SAVE & LOCALSTORAGE FUNCTIONS
+        // ===========================
+        
+        /**
+         * Auto-save current configuration to localStorage
+         */
+        function autoSave() {
+            try {
+                const saveData = {
+                    tourData: tourData,
+                    timestamp: new Date().toISOString(),
+                    version: '1.0'
+                };
+                
+                localStorage.setItem('360kku-tour-config', JSON.stringify(saveData));
+                console.log('Configuration auto-saved to localStorage');
+                
+                // Show subtle save indicator
+                showSaveIndicator();
+            } catch (error) {
+                console.error('Failed to auto-save:', error);
+            }
+        }
+
+        /**
+         * Load configuration from localStorage
+         */
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('360kku-tour-config');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    
+                    // Validate the saved data
+                    if (parsed.tourData && validateTourData(parsed.tourData)) {
+                        return parsed;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load from localStorage:', error);
+            }
+            return null;
+        }
+
+        /**
+         * Clear localStorage data
+         */
+        function clearAutoSave() {
+            try {
+                localStorage.removeItem('360kku-tour-config');
+                showMessage('Auto-save data cleared', 'info');
+            } catch (error) {
+                console.error('Failed to clear localStorage:', error);
+            }
+        }
+
+        /**
+         * Show subtle save indicator
+         */
+        function showSaveIndicator() {
+            // Create or update save indicator
+            let indicator = document.getElementById('save-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'save-indicator';
+                indicator.className = 'fixed bottom-4 right-4 px-3 py-2 bg-green-600 text-white text-sm rounded-lg shadow-lg z-50 opacity-0 transition-opacity duration-300';
+                indicator.innerHTML = '<i class="fas fa-save mr-1"></i> Auto-saved';
+                document.body.appendChild(indicator);
+            }
+            
+            // Show and hide indicator
+            indicator.style.opacity = '1';
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+            }, 2000);
+        }
+
+        /**
+         * Prompt to restore from auto-save if available
+         */
+        function promptRestoreAutoSave() {
+            const savedData = loadFromLocalStorage();
+            if (savedData) {
+                const saveTime = new Date(savedData.timestamp).toLocaleString();
+                const sceneCount = Object.keys(savedData.tourData.scenes).length;
+                
+                const restore = confirm(
+                    `Found auto-saved configuration from ${saveTime}\n\n` +
+                    `Contains ${sceneCount} scene(s)\n\n` +
+                    `Would you like to restore it?`
+                );
+                
+                if (restore) {
+                    tourData = savedData.tourData;
+                    updateAllUI();
+                    showMessage('Configuration restored from auto-save!', 'success');
+                    return true;
+                }
+            }
+            return false;
         }
 
         // ===========================
@@ -2015,6 +2148,9 @@
          * Initialize the configurator application
          */
         function initializeConfigurator() {
+            // Check for auto-saved data first
+            const hasAutoSave = promptRestoreAutoSave();
+            
             // Initialize canvas
             appState.canvas = document.getElementById('minimap-canvas');
             if (appState.canvas) {
@@ -2033,8 +2169,10 @@
             // Initial UI update
             updateAllUI();
             
-            // Show welcome message
-            showMessage('Welcome to the 360° Tour Configurator! Start by uploading a floor plan.', 'info');
+            // Show welcome message (only if no auto-save was restored)
+            if (!hasAutoSave) {
+                showMessage('Welcome to the 360° Tour Configurator! Start by uploading a floor plan.', 'info');
+            }
             
             console.log('Configurator initialized successfully');
         }
@@ -2062,6 +2200,7 @@
         window.importConfiguration = importConfiguration;
         window.copyToClipboard = copyToClipboard;
         window.resetConfiguration = resetConfiguration;
+        window.clearAutoSave = clearAutoSave;
         window.toggleHotspotMode = toggleHotspotMode;
         window.generateDeploymentPath = generateDeploymentPath;
     </script>
