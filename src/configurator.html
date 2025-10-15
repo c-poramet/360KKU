@@ -91,9 +91,7 @@
             visibility: visible !important;
             opacity: 1 !important;
             z-index: 10000 !important;
-            position: absolute !important;
-            /* Make it stable - no wiggling */
-            transform: translate(-50%, -50%) !important;
+            /* Let Pannellum handle positioning - don't override transform */
             transition: transform 0.2s ease !important;
             pointer-events: auto !important;
         }
@@ -108,21 +106,19 @@
             cursor: pointer !important;
             display: block !important;
             visibility: visible !important;
-            position: absolute !important;
-            transform: translate(-50%, -50%) !important;
             pointer-events: auto !important;
         }
         
         .pnlm-hotspot:hover {
             background: #ef4444 !important;
-            transform: translate(-50%, -50%) scale(1.3) !important;
+            transform: scale(1.3) !important;
         }
         
         .hotspot-preview:hover,
         .pnlm-hotspot.hotspot-preview:hover,
         .pnlm-hotspot-base.hotspot-preview:hover {
             background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-            transform: translate(-50%, -50%) scale(1.3) !important;
+            transform: scale(1.3) !important;
         }
         
         .custom-hotspot {
@@ -714,7 +710,7 @@
 
         /**
          * Draw the floor plan image and all scene markers on the canvas
-         * FIXED: Now maintains aspect ratio and fits image properly
+         * FIXED: Now maintains aspect ratio and fits image properly with DPI scaling
          */
         function drawFloorPlan() {
             const ctx = appState.ctx;
@@ -726,17 +722,21 @@
                 return;
             }
             
-            // Clear the entire canvas
-            ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+            // Get actual display dimensions (not DPI-scaled dimensions)
+            const canvasRect = canvas.getBoundingClientRect();
+            const displayWidth = canvasRect.width;
+            const displayHeight = canvasRect.height;
+            
+            // Clear the entire canvas using display dimensions
+            ctx.clearRect(0, 0, displayWidth, displayHeight);
             
             // Draw the floor plan image if available
             if (appState.floorPlanImage) {
-                const canvasRect = canvas.getBoundingClientRect();
                 const imgWidth = appState.floorPlanImage.width;
                 const imgHeight = appState.floorPlanImage.height;
                 
                 // Calculate aspect ratios
-                const canvasAspect = canvasRect.width / canvasRect.height;
+                const canvasAspect = displayWidth / displayHeight;
                 const imgAspect = imgWidth / imgHeight;
                 
                 let drawWidth, drawHeight, offsetX, offsetY;
@@ -744,15 +744,15 @@
                 // Fit image to canvas while maintaining aspect ratio
                 if (imgAspect > canvasAspect) {
                     // Image is wider - fit to width
-                    drawWidth = canvasRect.width;
-                    drawHeight = canvasRect.width / imgAspect;
+                    drawWidth = displayWidth;
+                    drawHeight = displayWidth / imgAspect;
                     offsetX = 0;
-                    offsetY = (canvasRect.height - drawHeight) / 2;
+                    offsetY = (displayHeight - drawHeight) / 2;
                 } else {
                     // Image is taller - fit to height
-                    drawHeight = canvasRect.height;
-                    drawWidth = canvasRect.height * imgAspect;
-                    offsetX = (canvasRect.width - drawWidth) / 2;
+                    drawHeight = displayHeight;
+                    drawWidth = displayHeight * imgAspect;
+                    offsetX = (displayWidth - drawWidth) / 2;
                     offsetY = 0;
                 }
                 
