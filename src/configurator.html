@@ -1241,9 +1241,13 @@
                     // Initialize Pannellum viewer
                     appState.viewer = pannellum.viewer('panorama-viewer', config);
                     
+                    // Remove any previous load event listeners
+                    appState.viewer.off('load');
+                    
                     // Wait for viewer to fully load before setting up interactions
                     appState.viewer.on('load', function() {
-                        console.log(`Scene loaded successfully: ${sceneId}`);
+                        console.log(`✅ Scene loaded successfully: ${sceneId}`);
+                        console.log(`🔄 Setting up interactions and rendering hotspots...`);
                         
                         // Set up hotspot click handler
                         setupHotspotClickHandler();
@@ -1251,10 +1255,20 @@
                         // Set up mouse tracking for coordinates
                         setupMouseTracking();
                         
+                        // Get hotspots for current scene
+                        const currentScene = tourData.scenes[sceneId];
+                        const currentHotspots = currentScene?.hotSpots || [];
+                        console.log(`📍 Found ${currentHotspots.length} hotspots to render for scene: ${sceneId}`);
+                        
                         // Render existing hotspots AFTER viewer is fully loaded
                         renderHotspots();
                         
-                        console.log(`Hotspots rendered for scene: ${sceneId}`);
+                        console.log(`✅ Hotspots rendering complete for scene: ${sceneId}`);
+                    });
+                    
+                    // Also set up error handler
+                    appState.viewer.on('error', function(error) {
+                        console.error(`❌ Error loading panorama for scene ${sceneId}:`, error);
                     });
                     
                     // Enable hotspot mode button immediately
@@ -1263,7 +1277,7 @@
                         hotspotBtn.disabled = false;
                     }
                     
-                    console.log(`Initializing viewer for scene: ${sceneId}`);
+                    console.log(`🔄 Initializing Pannellum viewer for scene: ${sceneId}`);
                 } catch (error) {
                     console.error('Error loading scene in viewer:', error);
                     
@@ -1556,22 +1570,25 @@
          */
         function renderPannellumHotspots(hotspots) {
             if (!appState.viewer) {
-                console.warn('Viewer not ready for hotspot rendering');
+                console.warn('⚠️ Viewer not ready for hotspot rendering');
                 return;
             }
             
-            console.log(`Rendering ${hotspots.length} hotspots in Pannellum viewer`);
+            console.log(`🎯 Rendering ${hotspots.length} hotspots in Pannellum viewer`);
             
             // Remove ALL existing hotspots more thoroughly
             try {
                 // Try to get config and remove all hotspots
                 const config = appState.viewer.getConfig();
-                if (config.hotSpots) {
-                    config.hotSpots.forEach((existingHotspot) => {
+                if (config.hotSpots && config.hotSpots.length > 0) {
+                    console.log(`🧹 Cleaning up ${config.hotSpots.length} existing hotspots...`);
+                    // Create a copy to avoid modification during iteration
+                    const existingHotspots = [...config.hotSpots];
+                    existingHotspots.forEach((existingHotspot) => {
                         if (existingHotspot.id && existingHotspot.id.startsWith('hotspot_')) {
                             try {
                                 appState.viewer.removeHotSpot(existingHotspot.id);
-                                console.log(`Removed existing hotspot: ${existingHotspot.id}`);
+                                console.log(`  🗑️ Removed: ${existingHotspot.id}`);
                             } catch (e) {
                                 // Ignore removal errors
                             }
@@ -1580,7 +1597,7 @@
                 }
             } catch (e) {
                 // Fallback: try to remove by index (up to 100 possible hotspots)
-                console.log('Using fallback hotspot removal method');
+                console.log('🔄 Using fallback hotspot removal method');
                 for (let i = 0; i < 100; i++) {
                     try {
                         appState.viewer.removeHotSpot(`hotspot_${i}`);
@@ -1590,6 +1607,8 @@
                     }
                 }
             }
+            
+            console.log(`✨ Adding ${hotspots.length} new hotspots...`);
             
             // Add current hotspots
             hotspots.forEach((hotspot, index) => {
