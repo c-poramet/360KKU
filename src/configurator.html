@@ -595,16 +595,23 @@
             appState.canvas = document.getElementById('minimap-canvas');
             appState.ctx = appState.canvas.getContext('2d');
             
-            // Set up canvas dimensions properly
+            // Set up high-DPI canvas for crisp rendering
             if (appState.canvas && appState.ctx) {
                 const rect = appState.canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
                 
-                // Set canvas internal dimensions to match display size
-                appState.canvas.width = rect.width;
-                appState.canvas.height = rect.height;
+                // Set canvas internal dimensions with DPI scaling for crispness
+                appState.canvas.width = rect.width * dpr;
+                appState.canvas.height = rect.height * dpr;
                 
-                // No DPI scaling to avoid zoom issues
-                console.log(`Canvas initialized: ${rect.width}x${rect.height}`);
+                // Scale the context to match DPI
+                appState.ctx.scale(dpr, dpr);
+                
+                // Store display dimensions for drawing calculations
+                appState.canvasDisplayWidth = rect.width;
+                appState.canvasDisplayHeight = rect.height;
+                
+                console.log(`Canvas initialized: display=${rect.width}x${rect.height}, internal=${appState.canvas.width}x${appState.canvas.height}, DPR=${dpr}`);
             }
         }
 
@@ -713,7 +720,7 @@
 
         /**
          * Draw the floor plan image and all scene markers on the canvas
-         * FIXED: Now maintains aspect ratio and fits image properly without zoom
+         * FIXED: High-DPI crisp rendering with proper aspect ratio and fit
          */
         function drawFloorPlan() {
             const ctx = appState.ctx;
@@ -725,11 +732,11 @@
                 return;
             }
             
-            // Use canvas internal dimensions
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
+            // Use display dimensions for calculations (not DPI-scaled internal dimensions)
+            const canvasWidth = appState.canvasDisplayWidth || canvas.getBoundingClientRect().width;
+            const canvasHeight = appState.canvasDisplayHeight || canvas.getBoundingClientRect().height;
             
-            // Clear the entire canvas
+            // Clear the entire canvas using display dimensions
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             
             // Draw the floor plan image if available
@@ -737,7 +744,7 @@
                 const imgWidth = appState.floorPlanImage.width;
                 const imgHeight = appState.floorPlanImage.height;
                 
-                // Calculate aspect ratios
+                // Calculate aspect ratios using display dimensions
                 const canvasAspect = canvasWidth / canvasHeight;
                 const imgAspect = imgWidth / imgHeight;
                 
@@ -758,7 +765,7 @@
                     offsetY = 0;
                 }
                 
-                console.log(`Drawing floor plan: canvas=${canvasWidth}x${canvasHeight}, image=${imgWidth}x${imgHeight}, draw=${drawWidth.toFixed(1)}x${drawHeight.toFixed(1)} at (${offsetX.toFixed(1)}, ${offsetY.toFixed(1)})`);
+                console.log(`Drawing floor plan: display=${canvasWidth}x${canvasHeight}, image=${imgWidth}x${imgHeight}, draw=${drawWidth.toFixed(1)}x${drawHeight.toFixed(1)} at (${offsetX.toFixed(1)}, ${offsetY.toFixed(1)})`);
                 
                 // Draw with proper aspect ratio and centering
                 ctx.drawImage(
