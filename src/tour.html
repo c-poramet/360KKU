@@ -252,17 +252,19 @@
                     // Decide which image type to use based on the floor
                     let imgUrl, imgData;
                     
-                    // Try to load the SVG first
+                    // Try to load PNG first (may provide better alignment)
                     try {
-                        imgUrl = `images/${floor}/floorplan.svg`;
-                        imgData = await loadImage(imgUrl, 'svg');
+                        imgUrl = `images/${floor}/floorplan.png`;
+                        imgData = await loadImage(imgUrl, 'png');
+                        console.log('Successfully loaded PNG floorplan');
                     } catch (e) {
-                        // If SVG fails, try PNG
+                        // If PNG fails, try SVG as fallback
                         try {
-                            imgUrl = `images/${floor}/floorplan.png`;
-                            imgData = await loadImage(imgUrl, 'png');
+                            imgUrl = `images/${floor}/floorplan.svg`;
+                            imgData = await loadImage(imgUrl, 'svg');
+                            console.log('Falling back to SVG floorplan');
                         } catch (e2) {
-                            throw new Error('Both SVG and PNG floorplan loading failed');
+                            throw new Error('Both PNG and SVG floorplan loading failed');
                         }
                     }
                     
@@ -308,15 +310,58 @@
                         trackResize: true
                     });
                     
-                    // Add the image overlay to the map
+                    // Add a mousemove event to show coordinates for calibration
+                    // This is helpful when trying to position markers manually
+                    map.on('mousemove', function(e) {
+                        // Calculate relative position (0-1)
+                        const bounds = map.getBounds();
+                        const mapWidth = bounds.getEast() - bounds.getWest();
+                        const mapHeight = bounds.getNorth() - bounds.getSouth();
+                        
+                        const relX = (e.latlng.lng - bounds.getWest()) / mapWidth;
+                        const relY = 1 - ((e.latlng.lat - bounds.getSouth()) / mapHeight); // Convert back from Leaflet's inverted Y
+                        
+                        // Update a global variable for debugging purposes
+                        window.mousePosition = {
+                            leaflet: { lat: e.latlng.lat, lng: e.latlng.lng },
+                            relative: { x: relX, y: relY }
+                        };
+                    });
+                    
+                    // Add a click event for easy coordinate capture (useful for calibration)
+                    map.on('click', function(e) {
+                        // Calculate relative position (0-1)
+                        const bounds = map.getBounds();
+                        const mapWidth = bounds.getEast() - bounds.getWest();
+                        const mapHeight = bounds.getNorth() - bounds.getSouth();
+                        
+                        const relX = (e.latlng.lng - bounds.getWest()) / mapWidth;
+                        const relY = 1 - ((e.latlng.lat - bounds.getSouth()) / mapHeight);
+                        
+                        console.log(`Clicked at relative position: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
+                        console.log(`For calibration, use: relX = ${relX.toFixed(3)}; relY = ${relY.toFixed(3)};`);
+                        
+                        // If in development mode, show an alert with the position
+                        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                            alert(`Position: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
+                        }
+                    });
+                    
+                    // Add the image overlay to the map with proper handling
                     floorplanImage = L.imageOverlay(imgUrl, bounds).addTo(map);
                     
-                    // Store image dimensions
+                    // Store image dimensions and type
                     map.imgWidth = imgData.width;
                     map.imgHeight = imgData.height;
+                    map.imgType = imgData.type;
                     
-                    // Fit the map to the image bounds
-                    map.fitBounds(bounds);
+                    console.log(`Added ${imgData.type} floorplan to map: ${imgData.width}x${imgData.height}`);
+                    
+                    // Fit the map to the image bounds with a slight padding to ensure markers near edges are visible
+                    map.fitBounds(bounds, {
+                        padding: [5, 5], // 5px padding
+                        animate: false   // No animation for initial fit
+                    });
                     
                     // Wait a moment for the map to stabilize before adding markers
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -337,6 +382,53 @@
             } // Closing brace for loadFloorPlan function
 
             // Function to clear all markers
+            // Helper function to convert between coordinate systems
+            function convertCoordinates(x, y, fromType, toType, imgWidth, imgHeight) {
+                // Default dimensions if not provided
+                const width = imgWidth || 600;
+                const height = imgHeight || 600;
+                
+                // Convert to relative coordinates (percentage of image)
+                let relX, relY;
+                
+                if (fromType === 'svg') {
+                    // SVG coordinates are typically in the SVG's internal system
+                    // Assuming the SVG viewbox or original dimensions are 600x600
+                    relX = x / 600;
+                    relY = y / 600;
+                } else if (fromType === 'png') {
+                    // PNG coordinates are in pixels from the top-left
+                    relX = x / width;
+                    relY = y / height;
+                } else if (fromType === 'relative') {
+                    // Already relative
+                    relX = x;
+                    relY = y;
+                }
+                
+                // Convert from relative to target format
+                if (toType === 'svg') {
+                    return {
+                        x: relX * 600,
+                        y: relY * 600
+                    };
+                } else if (toType === 'png') {
+                    return {
+                        x: relX * width,
+                        y: relY * height
+                    };
+                } else if (toType === 'leaflet') {
+                    // For Leaflet, y=0 is bottom, not top
+                    return {
+                        x: relX,
+                        y: 1 - relY // Invert Y for Leaflet
+                    };
+                } else {
+                    // Return relative coordinates
+                    return { x: relX, y: relY };
+                }
+            }
+
             function clearMarkers() {
                 console.log('Clearing all markers...');
                 if (markers) {
@@ -376,30 +468,55 @@
                             
                             console.log(`Scene ${sceneId}: Original SVG coords (${svgX}, ${svgY})`);
                             
-                            // Use a consistent approach for all markers based on image dimensions
+                            // Determine if we're using PNG or SVG for positioning calculations
+                            const isPNG = window.floorplanInfo && window.floorplanInfo.type === 'png';
                             let relX, relY;
                             
                             // Define reference dimensions for coordinate transformation
-                            // These are the dimensions used in the original SVG coordinates
+                            // SVG dimensions used as reference (update these if your SVG size changes)
                             const SVG_WIDTH = 600;  // Reference SVG width
                             const SVG_HEIGHT = 600; // Reference SVG height
                             
-                            // Special calibration for known points
+                            // Get actual image dimensions for better scaling
+                            const imgWidth = map.imgWidth || SVG_WIDTH;
+                            const imgHeight = map.imgHeight || SVG_HEIGHT;
+                            
+                            // Special calibration for specific points
                             if (sceneId === 'lcorr1') {
-                                // Manual calibration for lcorr1 (left point)
-                                relX = 0.48;
-                                relY = 0.40;
-                                console.log(`Using calibrated position for ${sceneId}: (${relX}, ${relY})`);
+                                if (isPNG) {
+                                    // Calibration specific for PNG
+                                    relX = 0.48; 
+                                    relY = 0.40;
+                                } else {
+                                    // SVG calibration
+                                    relX = 0.48;
+                                    relY = 0.40;
+                                }
+                                console.log(`Using calibrated ${isPNG ? 'PNG' : 'SVG'} position for ${sceneId}: (${relX}, ${relY})`);
                             } else if (sceneId === 'lcorr2') {
-                                // Manual calibration for lcorr2 (right point)
-                                relX = 0.58;
-                                relY = 0.40;
-                                console.log(`Using calibrated position for ${sceneId}: (${relX}, ${relY})`);
+                                if (isPNG) {
+                                    // Calibration specific for PNG
+                                    relX = 0.58;
+                                    relY = 0.40;
+                                } else {
+                                    // SVG calibration
+                                    relX = 0.58;
+                                    relY = 0.40;
+                                }
+                                console.log(`Using calibrated ${isPNG ? 'PNG' : 'SVG'} position for ${sceneId}: (${relX}, ${relY})`);
                             } else {
-                                // Calculate relative position based on SVG dimensions
-                                relX = svgX / SVG_WIDTH;
-                                relY = svgY / SVG_HEIGHT;
-                                console.log(`Using calculated position for ${sceneId}: (${relX}, ${relY}) from SVG coords (${svgX}, ${svgY})`);
+                                // For other points, use a calculation based on dimensions
+                                if (isPNG) {
+                                    // Adjust calculation for PNG
+                                    // This assumes SVG coordinates can be mapped directly to PNG with scaling
+                                    relX = svgX / SVG_WIDTH;
+                                    relY = svgY / SVG_HEIGHT;
+                                } else {
+                                    // Standard SVG calculation
+                                    relX = svgX / SVG_WIDTH;
+                                    relY = svgY / SVG_HEIGHT;
+                                }
+                                console.log(`Using calculated position for ${sceneId} (${isPNG ? 'PNG' : 'SVG'}): (${relX}, ${relY}) from coords (${svgX}, ${svgY})`);
                             }
                             
                             // Create a custom icon for the marker with unique identifier

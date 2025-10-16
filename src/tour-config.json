@@ -9,13 +9,13 @@
       "title": "Left Corridor 1",
       "panorama": "images/floor1/left-corr-1.jpg",
       "map": {
-        "x": 536,
-        "y": 483
+        "x": 68,
+        "y": 154
       },
       "hotSpots": [
         {
-          "pitch": -22.1,
-          "yaw": 101.5,
+          "pitch": -21,
+          "yaw": 102.4,
           "type": "scene",
           "text": "Go to Left Corridor 2",
           "sceneId": "lcorr2"
@@ -26,16 +26,40 @@
       "title": "Left Corridor 2",
       "panorama": "images/floor1/left-corr-2.jpg",
       "map": {
-        "x": 576,
-        "y": 483
+        "x": 93,
+        "y": 154
       },
       "hotSpots": [
         {
-          "pitch": -18.7,
-          "yaw": -63.9,
+          "pitch": -18.5,
+          "yaw": -63.5,
           "type": "scene",
           "text": "Go to Left Corridor 1",
           "sceneId": "lcorr1"
+        },
+        {
+          "pitch": -12.3,
+          "yaw": 114.3,
+          "type": "scene",
+          "text": "Go to Left Corridor 3",
+          "sceneId": "lcorr3"
+        }
+      ]
+    },
+    "lcorr3": {
+      "title": "Left Corridor 3",
+      "panorama": "images/floor1/left-corr-3.jpg",
+      "map": {
+        "x": 141,
+        "y": 154
+      },
+      "hotSpots": [
+        {
+          "pitch": -11.8,
+          "yaw": -76.3,
+          "type": "scene",
+          "text": "Go to Left Corridor 2",
+          "sceneId": "lcorr2"
         }
       ]
     }
