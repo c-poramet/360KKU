@@ -1,65 +1,1391 @@
 {
   "default": {
-    "firstScene": "lcorr1",
+    "firstScene": "",
     "sceneFadeDuration": 1000,
     "autoLoad": true
   },
   "scenes": {
-    "lcorr1": {
+    "1": {
       "title": "Left Corridor 1",
       "panorama": "images/floor1/left-corr-1.jpg",
       "map": {
-        "x": 68,
+        "x": 72,
         "y": 154
       },
       "hotSpots": [
         {
-          "pitch": -21,
-          "yaw": 102.4,
+          "pitch": -20.6,
+          "yaw": 101.4,
           "type": "scene",
           "text": "Go to Left Corridor 2",
-          "sceneId": "lcorr2"
+          "sceneId": "2"
+        },
+        {
+          "pitch": -14.3,
+          "yaw": 170.9,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        },
+        {
+          "pitch": -17.8,
+          "yaw": -79.4,
+          "type": "scene",
+          "text": "Go to LEFTEST",
+          "sceneId": "453"
         }
       ]
     },
-    "lcorr2": {
+    "2": {
       "title": "Left Corridor 2",
       "panorama": "images/floor1/left-corr-2.jpg",
       "map": {
-        "x": 93,
-        "y": 154
+        "x": 99,
+        "y": 153
       },
       "hotSpots": [
         {
-          "pitch": -18.5,
-          "yaw": -63.5,
+          "pitch": -19.4,
+          "yaw": -63.7,
           "type": "scene",
           "text": "Go to Left Corridor 1",
-          "sceneId": "lcorr1"
+          "sceneId": "1"
         },
         {
-          "pitch": -12.3,
-          "yaw": 114.3,
+          "pitch": -14.6,
+          "yaw": -153.9,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        },
+        {
+          "pitch": -14.7,
+          "yaw": 114.5,
           "type": "scene",
           "text": "Go to Left Corridor 3",
-          "sceneId": "lcorr3"
+          "sceneId": "3"
         }
       ]
     },
-    "lcorr3": {
+    "3": {
       "title": "Left Corridor 3",
       "panorama": "images/floor1/left-corr-3.jpg",
       "map": {
-        "x": 141,
-        "y": 154
+        "x": 158,
+        "y": 151
       },
       "hotSpots": [
         {
-          "pitch": -11.8,
-          "yaw": -76.3,
+          "pitch": -11,
+          "yaw": -162.8,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        },
+        {
+          "pitch": -12.3,
+          "yaw": -77,
           "type": "scene",
           "text": "Go to Left Corridor 2",
-          "sceneId": "lcorr2"
+          "sceneId": "2"
+        },
+        {
+          "pitch": -14.4,
+          "yaw": 101.8,
+          "type": "scene",
+          "text": "Go to Left Corridor 4",
+          "sceneId": "4"
+        }
+      ]
+    },
+    "4": {
+      "title": "Left Corridor 4",
+      "panorama": "images/floor1/left-corr-4.jpg",
+      "map": {
+        "x": 198,
+        "y": 151
+      },
+      "hotSpots": [
+        {
+          "pitch": -7.1,
+          "yaw": 36.6,
+          "type": "scene",
+          "text": "Go to Left Corridor Door",
+          "sceneId": "5"
+        },
+        {
+          "pitch": -12.1,
+          "yaw": 78.6,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -12.3,
+          "yaw": 113.5,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -18.2,
+          "yaw": -136.5,
+          "type": "scene",
+          "text": "Go to Left Corridor 3",
+          "sceneId": "3"
+        }
+      ]
+    },
+    "5": {
+      "title": "Left Corridor Door",
+      "panorama": "images/floor1/left-corr-door.jpg",
+      "map": {
+        "x": 243,
+        "y": 153
+      },
+      "hotSpots": [
+        {
+          "pitch": -15.4,
+          "yaw": -174.4,
+          "type": "scene",
+          "text": "Go to Left Corridor 4",
+          "sceneId": "4"
+        },
+        {
+          "pitch": -18.7,
+          "yaw": 98.4,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -9.2,
+          "yaw": 88.8,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -9,
+          "yaw": 113.7,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        },
+        {
+          "pitch": -23.2,
+          "yaw": -12.3,
+          "type": "scene",
+          "text": "Go to Stair 1",
+          "sceneId": "460"
+        }
+      ]
+    },
+    "6": {
+      "title": "Left Corridor Door Area",
+      "panorama": "images/floor1/left-corr-door-out-1.jpg",
+      "map": {
+        "x": 236,
+        "y": 203
+      },
+      "hotSpots": [
+        {
+          "pitch": -11.6,
+          "yaw": -56,
+          "type": "scene",
+          "text": "Go to Left Corridor Door",
+          "sceneId": "5"
+        },
+        {
+          "pitch": -11,
+          "yaw": -119.1,
+          "type": "scene",
+          "text": "Go to Left Corridor 4",
+          "sceneId": "4"
+        },
+        {
+          "pitch": -7.8,
+          "yaw": -139.8,
+          "type": "scene",
+          "text": "Go to Left Corridor 3",
+          "sceneId": "3"
+        },
+        {
+          "pitch": -16.5,
+          "yaw": 70.4,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -17.3,
+          "yaw": 124.9,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        }
+      ]
+    },
+    "7": {
+      "title": "Area Left Corridor Door (Out)",
+      "panorama": "images/floor1/left-corr-door-out-2.jpg",
+      "map": {
+        "x": 239,
+        "y": 240
+      },
+      "hotSpots": [
+        {
+          "pitch": -31,
+          "yaw": -163.2,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -25.9,
+          "yaw": 93.7,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -10.7,
+          "yaw": 119.3,
+          "type": "scene",
+          "text": "Go to Left Corridor Door",
+          "sceneId": "5"
+        },
+        {
+          "pitch": -7.7,
+          "yaw": 81.9,
+          "type": "scene",
+          "text": "Go to Left Corridor 4",
+          "sceneId": "4"
+        },
+        {
+          "pitch": -6.3,
+          "yaw": 21.3,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        },
+        {
+          "pitch": -19.6,
+          "yaw": -1.4,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        }
+      ]
+    },
+    "8": {
+      "title": "Left Bottom Corridor Door",
+      "panorama": "images/floor1/hall-bottom-left.jpg",
+      "map": {
+        "x": 261,
+        "y": 239
+      },
+      "hotSpots": []
+    },
+    "9": {
+      "title": "Hall",
+      "panorama": "images/floor1/hall.jpg",
+      "map": {
+        "x": 291,
+        "y": 215
+      },
+      "hotSpots": [
+        {
+          "pitch": -20.1,
+          "yaw": 54.7,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        },
+        {
+          "pitch": -10.9,
+          "yaw": 21.8,
+          "type": "scene",
+          "text": "Go to Exit (In)",
+          "sceneId": "555"
+        },
+        {
+          "pitch": -23,
+          "yaw": 155.3,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -23.6,
+          "yaw": -158.5,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -23.5,
+          "yaw": -103.1,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -17.3,
+          "yaw": -94.4,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -11.8,
+          "yaw": -99,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        },
+        {
+          "pitch": -16.7,
+          "yaw": 130.4,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door (Out)",
+          "sceneId": "513"
+        }
+      ]
+    },
+    "10": {
+      "title": "Right Bottom Door",
+      "panorama": "images/floor1/IMG_25681007_114012_458.jpg",
+      "map": {
+        "x": 327,
+        "y": 235
+      },
+      "hotSpots": []
+    },
+    "11": {
+      "title": "Hall of Fame",
+      "panorama": "images/floor1/IMG_25681007_114007_098.jpg",
+      "map": {
+        "x": 291,
+        "y": 245
+      },
+      "hotSpots": []
+    },
+    "111": {
+      "title": "Right Corridor 5",
+      "panorama": "images/floor1/IMG_25681007_113840_111.jpg",
+      "map": {
+        "x": 513,
+        "y": 147
+      },
+      "hotSpots": [
+        {
+          "pitch": -10.7,
+          "yaw": -101.5,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -16.5,
+          "yaw": -149.1,
+          "type": "scene",
+          "text": "Go to Right of the Bridge",
+          "sceneId": "635"
+        },
+        {
+          "pitch": -10.6,
+          "yaw": -77.1,
+          "type": "scene",
+          "text": "Go to Right Corridor 3",
+          "sceneId": "442"
+        },
+        {
+          "pitch": -18.5,
+          "yaw": 84,
+          "type": "scene",
+          "text": "Go to Right Outside",
+          "sceneId": "804"
+        }
+      ]
+    },
+    "123": {
+      "title": "Right Corridor 1",
+      "panorama": "images/floor1/IMG_25681007_113907_123.jpg",
+      "map": {
+        "x": 402,
+        "y": 149
+      },
+      "hotSpots": [
+        {
+          "pitch": -18.7,
+          "yaw": -137.1,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -11.6,
+          "yaw": -145.2,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door (Out)",
+          "sceneId": "513"
+        },
+        {
+          "pitch": -10.3,
+          "yaw": 134.2,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -16.9,
+          "yaw": -68.3,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        },
+        {
+          "pitch": -9.2,
+          "yaw": -131.4,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -13.3,
+          "yaw": 106.4,
+          "type": "scene",
+          "text": "Go to Right Corridor 2",
+          "sceneId": "845"
+        }
+      ]
+    },
+    "199": {
+      "title": "Outside Left 2",
+      "panorama": "images/floor1/IMG_25681007_113929_199.jpg",
+      "map": {
+        "x": 222,
+        "y": 29
+      },
+      "hotSpots": []
+    },
+    "225": {
+      "title": "Left Outside Area",
+      "panorama": "images/floor1/IMG_25681007_113348_225.jpg",
+      "map": {
+        "x": 69,
+        "y": 229
+      },
+      "hotSpots": [
+        {
+          "pitch": -6.8,
+          "yaw": 52.5,
+          "type": "scene",
+          "text": "Go to LEFTEST",
+          "sceneId": "453"
+        },
+        {
+          "pitch": -7,
+          "yaw": 73.9,
+          "type": "scene",
+          "text": "Go to Left Corridor 1",
+          "sceneId": "1"
+        },
+        {
+          "pitch": -9.6,
+          "yaw": 99.8,
+          "type": "scene",
+          "text": "Go to Left Corridor 2",
+          "sceneId": "2"
+        },
+        {
+          "pitch": -19.1,
+          "yaw": -132.5,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        }
+      ]
+    },
+    "237": {
+      "title": "Area Right Corridor Door",
+      "panorama": "images/floor1/IMG_25681007_113918_237.jpg",
+      "map": {
+        "x": 353,
+        "y": 203
+      },
+      "hotSpots": [
+        {
+          "pitch": -18.4,
+          "yaw": 80.1,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door (Out)",
+          "sceneId": "513"
+        },
+        {
+          "pitch": -16,
+          "yaw": -122.3,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        },
+        {
+          "pitch": -14.4,
+          "yaw": 112.8,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -6.1,
+          "yaw": -7.9,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        }
+      ]
+    },
+    "290": {
+      "title": "Lower Left",
+      "panorama": "images/floor1/IMG_25681007_113541_290.jpg",
+      "map": {
+        "x": 208,
+        "y": 259
+      },
+      "hotSpots": [
+        {
+          "pitch": -12.3,
+          "yaw": -40.1,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -7.7,
+          "yaw": -46.9,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -12.7,
+          "yaw": -81.8,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -6.8,
+          "yaw": -94.1,
+          "type": "scene",
+          "text": "Go to Left Corridor Door",
+          "sceneId": "5"
+        },
+        {
+          "pitch": -8.4,
+          "yaw": -129.8,
+          "type": "scene",
+          "text": "Go to Left Corridor 4",
+          "sceneId": "4"
+        },
+        {
+          "pitch": -11.8,
+          "yaw": 149.5,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        },
+        {
+          "pitch": -7.9,
+          "yaw": 60.3,
+          "type": "scene",
+          "text": "Go to Lower",
+          "sceneId": "829"
+        },
+        {
+          "pitch": -9.7,
+          "yaw": 90,
+          "type": "scene",
+          "text": "Go to Left Lower",
+          "sceneId": "569"
+        }
+      ]
+    },
+    "354": {
+      "title": "Exit (In/Out)",
+      "panorama": "images/floor1/IMG_25681007_113951_354.jpg",
+      "map": {
+        "x": 287,
+        "y": 82
+      },
+      "hotSpots": [
+        {
+          "pitch": -21.8,
+          "yaw": -42.7,
+          "type": "scene",
+          "text": "Go to Outside Left 1",
+          "sceneId": "904"
+        },
+        {
+          "pitch": -21.3,
+          "yaw": 45.3,
+          "type": "scene",
+          "text": "Go to Outside Right 1",
+          "sceneId": "415"
+        },
+        {
+          "pitch": -25.1,
+          "yaw": 179.5,
+          "type": "scene",
+          "text": "Go to Exit (In)",
+          "sceneId": "555"
+        }
+      ]
+    },
+    "365": {
+      "title": "Right Corridor 4",
+      "panorama": "images/floor1/IMG_25681007_113845_365.jpg",
+      "map": {
+        "x": 487,
+        "y": 148
+      },
+      "hotSpots": []
+    },
+    "415": {
+      "title": "Outside Right 1",
+      "panorama": "images/floor1/IMG_25681007_113940_415.jpg",
+      "map": {
+        "x": 321,
+        "y": 47
+      },
+      "hotSpots": [
+        {
+          "pitch": -17.3,
+          "yaw": -32.6,
+          "type": "scene",
+          "text": "Go to Outside Right 2",
+          "sceneId": "971"
+        },
+        {
+          "pitch": -17.8,
+          "yaw": -158.2,
+          "type": "scene",
+          "text": "Go to Outside Left 1",
+          "sceneId": "904"
+        },
+        {
+          "pitch": -14.7,
+          "yaw": -136.3,
+          "type": "scene",
+          "text": "Go to Outside Left 2",
+          "sceneId": "199"
+        },
+        {
+          "pitch": -20.7,
+          "yaw": 164.3,
+          "type": "scene",
+          "text": "Go to Exit (In/Out)",
+          "sceneId": "354"
+        }
+      ]
+    },
+    "442": {
+      "title": "Right Corridor 3",
+      "panorama": "images/floor1/IMG_25681007_113856_442.jpg",
+      "map": {
+        "x": 460,
+        "y": 148
+      },
+      "hotSpots": [
+        {
+          "pitch": -20.3,
+          "yaw": -166.3,
+          "type": "scene",
+          "text": "Go to Right Corridor 2",
+          "sceneId": "845"
+        },
+        {
+          "pitch": -7.6,
+          "yaw": -162.4,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        },
+        {
+          "pitch": -19.8,
+          "yaw": 114.4,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -6.8,
+          "yaw": 16.2,
+          "type": "scene",
+          "text": "Go to Right Corridor 5",
+          "sceneId": "111"
+        },
+        {
+          "pitch": -8.8,
+          "yaw": 61.7,
+          "type": "scene",
+          "text": "Go to Right of the Bridge",
+          "sceneId": "635"
+        }
+      ]
+    },
+    "453": {
+      "title": "LEFTEST",
+      "panorama": "images/floor1/IMG_25681007_113335_453.jpg",
+      "map": {
+        "x": 23,
+        "y": 153
+      },
+      "hotSpots": [
+        {
+          "pitch": -14.5,
+          "yaw": -165.5,
+          "type": "scene",
+          "text": "Go to Left Corridor 1",
+          "sceneId": "1"
+        },
+        {
+          "pitch": -10.1,
+          "yaw": -120.6,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        }
+      ]
+    },
+    "460": {
+      "title": "Stair 1",
+      "panorama": "images/floor1/IMG_25681007_113813_460.jpg",
+      "map": {
+        "x": 267,
+        "y": 152
+      },
+      "hotSpots": [
+        {
+          "pitch": -34.9,
+          "yaw": 3.6,
+          "type": "scene",
+          "text": "Go to Left Corridor Door",
+          "sceneId": "5"
+        },
+        {
+          "pitch": -21.9,
+          "yaw": 149,
+          "type": "scene",
+          "text": "Go to Exit (In)",
+          "sceneId": "555"
+        },
+        {
+          "pitch": -12.8,
+          "yaw": -176.4,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        }
+      ]
+    },
+    "475": {
+      "title": "Right Outside 2",
+      "panorama": "images/floor1/IMG_25681007_113829_475.jpg",
+      "map": {
+        "x": 548,
+        "y": 93
+      },
+      "hotSpots": []
+    },
+    "513": {
+      "title": "Area Right Corridor Door (Out)",
+      "panorama": "images/floor1/IMG_25681007_113912_513.jpg",
+      "map": {
+        "x": 359,
+        "y": 235
+      },
+      "hotSpots": [
+        {
+          "pitch": -12.4,
+          "yaw": 166.1,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -20.9,
+          "yaw": 142.9,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -8.9,
+          "yaw": 149.8,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -22.3,
+          "yaw": -129.6,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -5.1,
+          "yaw": -56.7,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -8.5,
+          "yaw": -138.1,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        }
+      ]
+    },
+    "555": {
+      "title": "Exit (In)",
+      "panorama": "images/floor1/IMG_25681007_113956_555.jpg",
+      "map": {
+        "x": 288,
+        "y": 134
+      },
+      "hotSpots": [
+        {
+          "pitch": -14.8,
+          "yaw": 96.4,
+          "type": "scene",
+          "text": "Go to Stair 1",
+          "sceneId": "460"
+        },
+        {
+          "pitch": -27.1,
+          "yaw": -151.1,
+          "type": "scene",
+          "text": "Go to Exit (In/Out)",
+          "sceneId": "354"
+        },
+        {
+          "pitch": -11.1,
+          "yaw": 15.5,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        },
+        {
+          "pitch": -13.2,
+          "yaw": -16.3,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        }
+      ]
+    },
+    "569": {
+      "title": "Left Lower",
+      "panorama": "images/floor1/IMG_25681007_113523_569.jpg",
+      "map": {
+        "x": 130,
+        "y": 331
+      },
+      "hotSpots": [
+        {
+          "pitch": -14,
+          "yaw": 40.1,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        },
+        {
+          "pitch": -19.4,
+          "yaw": 130.6,
+          "type": "scene",
+          "text": "Go to Lower",
+          "sceneId": "829"
+        },
+        {
+          "pitch": -12.8,
+          "yaw": 145,
+          "type": "scene",
+          "text": "Go to LOWEST",
+          "sceneId": "576"
+        },
+        {
+          "pitch": -11.1,
+          "yaw": -34.4,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        },
+        {
+          "pitch": -6.5,
+          "yaw": -49.4,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        },
+        {
+          "pitch": -6.4,
+          "yaw": 32.3,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        }
+      ]
+    },
+    "576": {
+      "title": "LOWEST",
+      "panorama": "images/floor1/IMG_25681007_113527_576.jpg",
+      "map": {
+        "x": 288,
+        "y": 375
+      },
+      "hotSpots": [
+        {
+          "pitch": -18.4,
+          "yaw": 142.5,
+          "type": "scene",
+          "text": "Go to Lower",
+          "sceneId": "829"
+        },
+        {
+          "pitch": -8.6,
+          "yaw": 129.1,
+          "type": "scene",
+          "text": "Go to Left Lower",
+          "sceneId": "569"
+        }
+      ]
+    },
+    "635": {
+      "title": "Right of the Bridge",
+      "panorama": "images/floor1/IMG_25681007_113818_635.jpg",
+      "map": {
+        "x": 493,
+        "y": 199
+      },
+      "hotSpots": [
+        {
+          "pitch": -7.7,
+          "yaw": 64.8,
+          "type": "scene",
+          "text": "Go to Right Corridor 3",
+          "sceneId": "442"
+        },
+        {
+          "pitch": -10.5,
+          "yaw": 35,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -13.1,
+          "yaw": 130.5,
+          "type": "scene",
+          "text": "Go to Right Corridor 5",
+          "sceneId": "111"
+        }
+      ]
+    },
+    "763": {
+      "title": "Hall Upper Right",
+      "panorama": "images/floor1/IMG_25681007_114001_763.jpg",
+      "map": {
+        "x": 322,
+        "y": 179
+      },
+      "hotSpots": [
+        {
+          "pitch": -12.1,
+          "yaw": -38.6,
+          "type": "scene",
+          "text": "Go to Exit (In)",
+          "sceneId": "555"
+        },
+        {
+          "pitch": -13.4,
+          "yaw": -79.5,
+          "type": "scene",
+          "text": "Go to Stair 1",
+          "sceneId": "460"
+        },
+        {
+          "pitch": -21.4,
+          "yaw": 26.9,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        },
+        {
+          "pitch": -15.1,
+          "yaw": 160.6,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -18.4,
+          "yaw": -160.1,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -13.3,
+          "yaw": -168.6,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -12.8,
+          "yaw": -145.2,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        }
+      ]
+    },
+    "797": {
+      "title": "Bridge to The Canteen",
+      "panorama": "images/floor1/IMG_25681007_113850_797.jpg",
+      "map": {
+        "x": 458,
+        "y": 197
+      },
+      "hotSpots": []
+    },
+    "804": {
+      "title": "Right Outside",
+      "panorama": "images/floor1/IMG_25681007_113834_804.jpg",
+      "map": {
+        "x": 545,
+        "y": 139
+      },
+      "hotSpots": [
+        {
+          "pitch": -18.7,
+          "yaw": 5.3,
+          "type": "scene",
+          "text": "Go to Right Corridor 5",
+          "sceneId": "111"
+        },
+        {
+          "pitch": -7.9,
+          "yaw": -32.7,
+          "type": "scene",
+          "text": "Go to Right of the Bridge",
+          "sceneId": "635"
+        },
+        {
+          "pitch": -8.3,
+          "yaw": 113,
+          "type": "scene",
+          "text": "Go to Right Outside 2",
+          "sceneId": "041"
+        }
+      ]
+    },
+    "829": {
+      "title": "Lower",
+      "panorama": "images/floor1/IMG_25681007_113531_829.jpg",
+      "map": {
+        "x": 204,
+        "y": 371
+      },
+      "hotSpots": [
+        {
+          "pitch": -7.6,
+          "yaw": -64.3,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        },
+        {
+          "pitch": -12.4,
+          "yaw": 88,
+          "type": "scene",
+          "text": "Go to LOWEST",
+          "sceneId": "576"
+        },
+        {
+          "pitch": -12.3,
+          "yaw": -116.1,
+          "type": "scene",
+          "text": "Go to Left Lower",
+          "sceneId": "569"
+        },
+        {
+          "pitch": -6.3,
+          "yaw": -105.1,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        }
+      ]
+    },
+    "845": {
+      "title": "Right Corridor 2",
+      "panorama": "images/floor1/IMG_25681007_113901_845.jpg",
+      "map": {
+        "x": 440,
+        "y": 147
+      },
+      "hotSpots": [
+        {
+          "pitch": -16.9,
+          "yaw": -147.7,
+          "type": "scene",
+          "text": "Go to Right Corridor 1",
+          "sceneId": "123"
+        },
+        {
+          "pitch": -12.9,
+          "yaw": -177,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -7.3,
+          "yaw": 174.1,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -16.4,
+          "yaw": 82.8,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -14.6,
+          "yaw": 25.2,
+          "type": "scene",
+          "text": "Go to Right Corridor 3",
+          "sceneId": "442"
+        },
+        {
+          "pitch": -8.9,
+          "yaw": -146.8,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        }
+      ]
+    },
+    "904": {
+      "title": "Outside Left 1",
+      "panorama": "images/floor1/IMG_25681007_113945_904.jpg",
+      "map": {
+        "x": 256,
+        "y": 49
+      },
+      "hotSpots": [
+        {
+          "pitch": -22.4,
+          "yaw": -166.5,
+          "type": "scene",
+          "text": "Go to Exit (In/Out)",
+          "sceneId": "354"
+        },
+        {
+          "pitch": -20.4,
+          "yaw": 140.9,
+          "type": "scene",
+          "text": "Go to Outside Right 1",
+          "sceneId": "415"
+        },
+        {
+          "pitch": -12.1,
+          "yaw": 116.1,
+          "type": "scene",
+          "text": "Go to Outside Right 2",
+          "sceneId": "971"
+        },
+        {
+          "pitch": -18.9,
+          "yaw": -7.4,
+          "type": "scene",
+          "text": "Go to Outside Left 2",
+          "sceneId": "199"
+        }
+      ]
+    },
+    "971": {
+      "title": "Outside Right 2",
+      "panorama": "images/floor1/IMG_25681007_113934_971.jpg",
+      "map": {
+        "x": 365,
+        "y": 33
+      },
+      "hotSpots": [
+        {
+          "pitch": -17.6,
+          "yaw": 92,
+          "type": "scene",
+          "text": "Go to Outside Right 1",
+          "sceneId": "415"
+        },
+        {
+          "pitch": -9.7,
+          "yaw": 130.3,
+          "type": "scene",
+          "text": "Go to Outside Left 1",
+          "sceneId": "904"
+        },
+        {
+          "pitch": -11.4,
+          "yaw": 158.9,
+          "type": "scene",
+          "text": "Go to Outside Left 2",
+          "sceneId": "199"
+        },
+        {
+          "pitch": -1.3,
+          "yaw": -19.7,
+          "type": "scene",
+          "text": "Go to Right Outside 2",
+          "sceneId": "041"
+        }
+      ]
+    },
+    "973": {
+      "title": "Right Corridor Door",
+      "panorama": "images/floor1/IMG_25681007_113923_973.jpg",
+      "map": {
+        "x": 355,
+        "y": 151
+      },
+      "hotSpots": [
+        {
+          "pitch": -20,
+          "yaw": 40.1,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -9.3,
+          "yaw": 49.9,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door (Out)",
+          "sceneId": "513"
+        },
+        {
+          "pitch": -8.9,
+          "yaw": 66.1,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -4.8,
+          "yaw": -14.2,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -15.9,
+          "yaw": 170.9,
+          "type": "scene",
+          "text": "Go to Exit (In)",
+          "sceneId": "555"
+        },
+        {
+          "pitch": -17.9,
+          "yaw": -40.6,
+          "type": "scene",
+          "text": "Go to Right Corridor 1",
+          "sceneId": "123"
+        }
+      ]
+    },
+    "990": {
+      "title": "Lower Left 2",
+      "panorama": "images/floor1/IMG_25681007_113432_990.jpg",
+      "map": {
+        "x": 125,
+        "y": 256
+      },
+      "hotSpots": [
+        {
+          "pitch": -13,
+          "yaw": 28.9,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        },
+        {
+          "pitch": -4.9,
+          "yaw": 90.7,
+          "type": "scene",
+          "text": "Go to Left Corridor 3",
+          "sceneId": "3"
+        },
+        {
+          "pitch": -8.7,
+          "yaw": 167.4,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -10.5,
+          "yaw": 147.8,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -16.2,
+          "yaw": -132.7,
+          "type": "scene",
+          "text": "Go to Left Lower",
+          "sceneId": "569"
+        },
+        {
+          "pitch": -3.3,
+          "yaw": 37.6,
+          "type": "scene",
+          "text": "Go to LEFTEST",
+          "sceneId": "453"
+        }
+      ]
+    },
+    "041": {
+      "title": "Right Outside 2",
+      "panorama": "images/floor1/IMG_25681007_113824_041.jpg",
+      "map": {
+        "x": 544,
+        "y": 39
+      },
+      "hotSpots": [
+        {
+          "pitch": 0.4,
+          "yaw": 2.7,
+          "type": "scene",
+          "text": "Go to Outside Right 2",
+          "sceneId": "971"
+        },
+        {
+          "pitch": -4,
+          "yaw": -87.6,
+          "type": "scene",
+          "text": "Go to Right Outside",
+          "sceneId": "804"
         }
       ]
     }
