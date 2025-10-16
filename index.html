@@ -15,7 +15,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -26,10 +28,10 @@
         
         #ad-container {
             position: relative;
-            max-width: 90%;
-            max-height: 80%;
+            max-width: 75%; /* Reduced from 90% */
+            max-height: 70%; /* Reduced from 80% */
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
             transform: scale(0.9);
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -43,7 +45,8 @@
             display: block;
             max-width: 100%;
             height: auto;
-            border-radius: 8px;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.25);
         }
         
         #ad-close-btn {
@@ -58,6 +61,8 @@
             padding: 10px 30px;
             font-weight: bold;
             cursor: pointer;
+            font-size: 16px;
+            letter-spacing: 0.5px;
             opacity: 0;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -214,23 +219,27 @@
                 ? 'src/images/ADS_MOBILE.png' 
                 : 'src/images/ADS_DESKTOP.png';
             adImage.alt = "Advertisement";
-            adContainer.insertBefore(adImage, closeBtn);
             
-            // Show the ad with animation
-            setTimeout(() => {
-                adOverlay.style.opacity = "1";
+            // When image is loaded, insert it (to prevent layout jumps)
+            adImage.onload = function() {
+                adContainer.insertBefore(adImage, closeBtn);
+                
+                // Show the ad with animation after image is loaded
                 setTimeout(() => {
-                    adContainer.classList.add('show');
+                    adOverlay.style.opacity = "1";
+                    setTimeout(() => {
+                        adContainer.classList.add('show');
+                    }, 100);
                 }, 100);
-            }, 100);
-            
-            // Make close button appear after 2 seconds
-            setTimeout(() => {
-                closeBtn.style.display = "block";
+                
+                // Make close button appear after 2 seconds
                 setTimeout(() => {
-                    closeBtn.classList.add('show');
-                }, 50);
-            }, 2000);
+                    closeBtn.style.display = "block";
+                    setTimeout(() => {
+                        closeBtn.classList.add('show');
+                    }, 50);
+                }, 2000);
+            };
             
             // Close button functionality
             closeBtn.addEventListener('click', () => {
@@ -240,6 +249,19 @@
                     adOverlay.style.display = "none";
                 }, 500);
             });
+            
+            // Also allow closing by clicking outside the ad (but only after 2 seconds)
+            setTimeout(() => {
+                adOverlay.addEventListener('click', (e) => {
+                    if (e.target === adOverlay) {
+                        adOverlay.style.opacity = "0";
+                        adContainer.classList.remove('show');
+                        setTimeout(() => {
+                            adOverlay.style.display = "none";
+                        }, 500);
+                    }
+                });
+            }, 2000);
         });
     </script>
     <!-- Navigation -->
