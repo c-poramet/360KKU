@@ -285,7 +285,57 @@
         "x": 261,
         "y": 239
       },
-      "hotSpots": []
+      "hotSpots": [
+        {
+          "pitch": -21,
+          "yaw": -6.4,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -20.2,
+          "yaw": 48.8,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -9.9,
+          "yaw": 23,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -8.7,
+          "yaw": -30.6,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        },
+        {
+          "pitch": -35.8,
+          "yaw": -165.3,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -16.9,
+          "yaw": 171.1,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        },
+        {
+          "pitch": -4.9,
+          "yaw": -32.2,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        }
+      ]
     },
     "9": {
       "title": "Hall",
@@ -360,7 +410,50 @@
         "x": 327,
         "y": 235
       },
-      "hotSpots": []
+      "hotSpots": [
+        {
+          "pitch": -16.7,
+          "yaw": 96.4,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -16.1,
+          "yaw": 147.1,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -9.5,
+          "yaw": 125.8,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -10.8,
+          "yaw": -153.9,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        },
+        {
+          "pitch": -6.6,
+          "yaw": -169.9,
+          "type": "scene",
+          "text": "Go to Exit (In)",
+          "sceneId": "555"
+        },
+        {
+          "pitch": -6.4,
+          "yaw": -121.9,
+          "type": "scene",
+          "text": "Go to Right Corridor 1",
+          "sceneId": "123"
+        }
+      ]
     },
     "11": {
       "title": "Hall of Fame",
@@ -369,7 +462,50 @@
         "x": 291,
         "y": 245
       },
-      "hotSpots": []
+      "hotSpots": [
+        {
+          "pitch": -29.7,
+          "yaw": 101.5,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -31.5,
+          "yaw": 172,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -21.1,
+          "yaw": -110.4,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -14.3,
+          "yaw": -164.6,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        },
+        {
+          "pitch": -20.5,
+          "yaw": 103,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -10.1,
+          "yaw": -165.1,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        }
+      ]
     },
     "111": {
       "title": "Right Corridor 5",
@@ -468,7 +604,36 @@
         "x": 222,
         "y": 29
       },
-      "hotSpots": []
+      "hotSpots": [
+        {
+          "pitch": -11.2,
+          "yaw": -47.1,
+          "type": "scene",
+          "text": "Go to Outside Right 2",
+          "sceneId": "971"
+        },
+        {
+          "pitch": -1.7,
+          "yaw": -46,
+          "type": "scene",
+          "text": "Go to Right Outside 2",
+          "sceneId": "041"
+        },
+        {
+          "pitch": -15.8,
+          "yaw": 17.5,
+          "type": "scene",
+          "text": "Go to Outside Left 1",
+          "sceneId": "904"
+        },
+        {
+          "pitch": -9.4,
+          "yaw": -20.7,
+          "type": "scene",
+          "text": "Go to Outside Right 1",
+          "sceneId": "415"
+        }
+      ]
     },
     "225": {
       "title": "Left Outside Area",
@@ -1062,7 +1227,64 @@
         "x": 458,
         "y": 197
       },
-      "hotSpots": []
+      "hotSpots": [
+        {
+          "pitch": -9.4,
+          "yaw": -61.7,
+          "type": "scene",
+          "text": "Go to Right of the Bridge",
+          "sceneId": "635"
+        },
+        {
+          "pitch": -14.7,
+          "yaw": 179.8,
+          "type": "scene",
+          "text": "Go to Right Corridor 3",
+          "sceneId": "442"
+        },
+        {
+          "pitch": -5.8,
+          "yaw": 121.9,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "973"
+        },
+        {
+          "pitch": -5.9,
+          "yaw": -102.9,
+          "type": "scene",
+          "text": "Go to Right Corridor 5",
+          "sceneId": "111"
+        },
+        {
+          "pitch": -6.2,
+          "yaw": 81.6,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door (Out)",
+          "sceneId": "513"
+        },
+        {
+          "pitch": -3.9,
+          "yaw": 88.3,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -7.4,
+          "yaw": 104.2,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -10.2,
+          "yaw": 137.5,
+          "type": "scene",
+          "text": "Go to Right Corridor 2",
+          "sceneId": "845"
+        }
+      ]
     },
     "804": {
       "title": "Right Outside",
