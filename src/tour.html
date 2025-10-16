@@ -8,6 +8,7 @@
     <link rel="shortcut icon" href="LOGO.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <link rel="stylesheet" href="out.css"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <style>
         body, html {
@@ -80,7 +81,7 @@
 
         .scene-title {
             position: absolute;
-            bottom: 30px; /* Position at the bottom */
+            bottom: 80px; /* Moved up to make room for home button */
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.6);
@@ -100,6 +101,50 @@
 
         .scene-title.visible {
             opacity: 1;
+        }
+        
+        /* Home button styles */
+        #home-button {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(167, 59, 36, 0.8); /* KKU theme color */
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            opacity: 0.9;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #home-button:hover {
+            background: rgba(167, 59, 36, 1);
+            opacity: 1;
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Responsive styles for mobile devices */
+        @media (max-width: 768px) {
+            .scene-title {
+                bottom: 70px;
+                font-size: 16px;
+                padding: 8px 16px;
+            }
+            
+            #home-button {
+                bottom: 25px;
+                font-size: 14px;
+                padding: 6px 16px;
+            }
         }
         
         /* Hide Pannellum's default loading elements and title */
@@ -133,6 +178,12 @@
     
     <!-- Scene title display -->
     <div id="scene-title" class="scene-title"></div>
+    
+    <!-- Home button navigation -->
+    <a href="../index.html" id="home-button">
+        <i class="fas fa-home"></i>
+        Back to Home
+    </a>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
