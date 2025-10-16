@@ -187,43 +187,33 @@
 
                 const scene = tourConfig.scenes[sceneId];
                 const { x, y } = scene.map;
-
-                // First reset to default state
-                minimap.reset();
                 
-                // Start with a moderate fixed zoom level instead of calculating one
-                const fixedZoom = 2.0;
+                // Define a constant target zoom level
+                const TARGET_ZOOM = 4;
                 
-                // Apply the fixed zoom
-                minimap.zoom(fixedZoom);
-                
-                // Get container dimensions after zooming
+                // Get viewport dimensions from the minimap
                 const sizes = minimap.getSizes();
-                const containerWidth = sizes.width;
-                const containerHeight = sizes.height;
-                const realZoom = sizes.realZoom;
+                const viewportWidth = sizes.width;
+                const viewportHeight = sizes.height;
                 
-                // Calculate the point position after zoom
-                const pointX = x * realZoom;
-                const pointY = y * realZoom;
+                // Calculate the pan offset required to center the marker at the target zoom
+                const panX = (viewportWidth / 2) - (x * TARGET_ZOOM);
+                const panY = (viewportHeight / 2) - (y * TARGET_ZOOM);
                 
-                // Calculate pan position to center the marker
-                // We need to pan by: (container center) - (point position)
-                const panX = (containerWidth / 2) - pointX;
-                const panY = (containerHeight / 2) - pointY;
+                // Apply the target zoom level
+                minimap.zoom(TARGET_ZOOM);
+                
+                // Immediately apply the calculated pan to center the marker
+                minimap.pan({ x: panX, y: panY });
                 
                 // Log values for debugging
                 console.log('Centering minimap:', {
                     scene: sceneId,
                     markerPosition: { x, y },
-                    containerSize: { width: containerWidth, height: containerHeight },
-                    zoom: realZoom,
-                    pointPosition: { x: pointX, y: pointY },
+                    targetZoom: TARGET_ZOOM,
+                    viewportSize: { width: viewportWidth, height: viewportHeight },
                     panPosition: { x: panX, y: panY }
                 });
-                
-                // Apply the pan
-                minimap.pan({ x: panX, y: panY });
                 
                 // Highlight the active marker
                 updateActiveMarker(sceneId);
