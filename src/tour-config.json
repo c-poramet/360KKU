@@ -1,6 +1,6 @@
 {
   "default": {
-    "firstScene": "",
+    "firstScene": "lcorr1",
     "sceneFadeDuration": 1000,
     "autoLoad": true
   },
@@ -9,8 +9,8 @@
       "title": "Left Corridor 1",
       "panorama": "images/floor1/left-corr-1.jpg",
       "map": {
-        "x": 67,
-        "y": 153
+        "x": 536,
+        "y": 483
       },
       "hotSpots": [
         {
@@ -26,8 +26,8 @@
       "title": "Left Corridor 2",
       "panorama": "images/floor1/left-corr-2.jpg",
       "map": {
-        "x": 107,
-        "y": 154
+        "x": 576,
+        "y": 483
       },
       "hotSpots": [
         {

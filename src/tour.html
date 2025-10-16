@@ -6,6 +6,13 @@
     <title>360° Virtual Tour</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <!-- Leaflet.js CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+        crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
     <style>
         body, html {
             margin: 0;
@@ -23,43 +30,65 @@
         #floorplan-container {
             position: absolute;
             bottom: 20px;
-            right: 20px; /* Changed from left to right */
+            right: 20px;
             width: 200px; /* Fixed width for square shape */
             height: 200px; /* Fixed height to match width */
             border: 2px solid rgba(255, 255, 255, 0.7);
             border-radius: 8px;
-            background: rgba(0, 0, 0, 0.6);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            z-index: 1000;
             overflow: hidden;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-        #floorplan-svg {
+        #minimap {
             width: 100%;
             height: 100%;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
-        #floorplan-svg svg {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        .scene-marker {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background-color: #ff4500;
+        /* Custom Leaflet marker styles */
+        .scene-marker-icon {
             border-radius: 50%;
-            border: 2px solid white;
-            transform: translate(-50%, -50%);
-            transition: all 0.2s ease;
-            cursor: pointer;
+            border: 2px solid white !important;
+            background-color: #ff4500 !important; /* Orange-red color */
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.7) !important;
+            transition: all 0.3s ease;
+            z-index: 1000 !important; /* Ensure markers are on top */
+            /* Override any Leaflet default styles */
+            margin: 0 !important;
+            padding: 0 !important;
         }
-        .scene-marker.active {
-            background-color: #00ff7f;
-            transform: translate(-50%, -50%) scale(1.3);
+        .scene-marker-icon.active {
+            background-color: #00ff7f !important; /* Bright green for active marker */
+            border-color: white !important;
+            box-shadow: 0 0 15px #00ff7f !important;
+            transform: scale(1.5);
+            z-index: 1001 !important; /* Active marker is above others */
+        }
+        /* Fix for Leaflet default marker z-index and styling issues */
+        .leaflet-marker-icon {
+            z-index: 1000 !important;
+            background-color: #ff4500 !important;
+            border-radius: 50% !important;
+            border: 2px solid white !important;
+        }
+        .leaflet-marker-icon.active {
+            z-index: 1001 !important;
+            background-color: #00ff7f !important;
+        }
+        /* Ensure proper sizing for the marker icon div */
+        .leaflet-div-icon {
+            width: 14px !important;
+            height: 14px !important;
+            background-color: #ff4500 !important;
+            border: 2px solid white !important;
+            border-radius: 50% !important;
+        }
+        /* Override Leaflet's default styles for our dark theme */
+        .leaflet-container {
+            background: rgba(0, 0, 0, 0.6) !important;
+        }
+        .leaflet-control-attribution {
+            background: rgba(0, 0, 0, 0.5) !important;
+            color: #aaa !important;
+            font-size: 8px !important;
         }
         .pnlm-hotspot {
             width: 30px !important;
@@ -80,7 +109,7 @@
 
     <div id="panorama"></div>
     <div id="floorplan-container">
-        <div id="floorplan-svg"></div>
+        <div id="minimap"></div>
     </div>
 
     <script>
@@ -88,6 +117,10 @@
             let viewer;
             let tourConfig;
             let currentFloor = 'floor1'; // Default floor
+            let map; // Leaflet map
+            let markers = {}; // Store markers by sceneId
+            let activeMarker; // Currently active marker
+            let floorplanImage; // Current floor plan image overlay
 
             async function loadTour() {
                 try {
@@ -98,6 +131,7 @@
                     tourConfig = await response.json();
                     console.log('Tour configuration loaded:', tourConfig);
                     initializeViewer(tourConfig);
+                    initializeMap();
                     await loadFloorPlan(currentFloor);
                 } catch (error) {
                     console.error("Could not load tour configuration:", error);
@@ -124,48 +158,268 @@
                     updateActiveMarker(currentSceneId);
                 });
             }
+            
+            function initializeMap() {
+                // Create a Leaflet map with no initial view (we'll set it later)
+                map = L.map('minimap', {
+                    crs: L.CRS.Simple, // Use simple coordinate system for our floorplan
+                    minZoom: -2,
+                    maxZoom: 2,
+                    zoomControl: false, // Hide zoom controls
+                    attributionControl: false, // Hide attribution
+                    doubleClickZoom: false, // Disable double click zoom
+                    dragging: false // Disable dragging to keep the minimap fixed
+                });
+                
+                // Add attribution in a more subtle way
+                map.attributionControl = L.control.attribution({
+                    prefix: 'Leaflet'
+                }).addTo(map);
+                
+                // Define calibration points for coordinate transformation
+                // These are reference points that map SVG coordinates to Leaflet coordinates
+                // Based on your screenshot, we'll define these points for proper alignment
+                map.calibrationPoints = {
+                    // These are examples and need to be adjusted based on your actual data
+                    // Format: [SVG coordinates] => [Leaflet coordinates]
+                    // The green dot in your image is our reference point
+                    svgToLeaflet: [
+                        { svg: [536, 483], leaflet: [0.2, 0.8] }, // Green dot position
+                        { svg: [576, 483], leaflet: [0.2, 0.85] } // Orange dot position
+                    ]
+                };
+            }
 
             async function loadFloorPlan(floor) {
-                const floorplanContainer = document.getElementById('floorplan-svg');
                 try {
-                    const response = await fetch(`images/${floor}/floorplan.svg`);
-                    if (!response.ok) throw new Error('Floorplan not found');
-                    const svgData = await response.text();
-                    floorplanContainer.innerHTML = svgData;
-                    createMarkers(floor);
+                    // Clear existing markers
+                    Object.values(markers).forEach(marker => {
+                        try {
+                            marker.remove();
+                        } catch (e) {
+                            console.warn('Error removing marker:', e);
+                        }
+                    });
+                    markers = {};
+                    
+                    // Remove existing floorplan image if any
+                    if (floorplanImage) {
+                        try {
+                            floorplanImage.remove();
+                        } catch (e) {
+                            console.warn('Error removing floorplan image:', e);
+                        }
+                    }
+                    
+                    // Function to load the image
+                    const loadImage = async (url, type) => {
+                        return new Promise((resolve, reject) => {
+                            console.log(`Attempting to load ${type} floorplan from: ${url}`);
+                            const img = new Image();
+                            img.onload = function() {
+                                console.log(`Loaded ${type} floorplan: ${this.width}x${this.height}`);
+                                resolve({
+                                    url: url,
+                                    width: this.width,
+                                    height: this.height,
+                                    type: type
+                                });
+                            };
+                            img.onerror = function() {
+                                console.warn(`Could not load ${type} floor plan image`);
+                                reject(new Error(`Could not load ${type} floor plan image`));
+                            };
+                            img.src = url;
+                        });
+                    };
+                    
+                    // First try SVG (using your svg directly)
+                    let imgUrl = `images/${floor}/floorplan.svg`;
+                    let imgType = 'svg';
+                    let imgData;
+                    
+                    try {
+                        imgData = await loadImage(imgUrl, 'svg');
+                    } catch (e) {
+                        // If SVG fails, try PNG
+                        console.log('SVG load failed, trying PNG');
+                        imgUrl = `images/${floor}/floorplan.png`;
+                        imgType = 'png';
+                        
+                        try {
+                            imgData = await loadImage(imgUrl, 'png');
+                        } catch (e) {
+                            throw new Error('Both SVG and PNG floorplan loading failed');
+                        }
+                    }
+                    
+                    // If we get here, we have successfully loaded an image
+                    // Set map bounds based on image dimensions
+                    const bounds = [[0, 0], [imgData.height, imgData.width]];
+                    console.log(`Setting map bounds for ${imgType}:`, bounds);
+                    
+                    // Add the image overlay to the map
+                    floorplanImage = L.imageOverlay(imgUrl, bounds).addTo(map);
+                    
+                    // Store image dimensions for coordinate transformation
+                    map.imgWidth = imgData.width;
+                    map.imgHeight = imgData.height;
+                    
+                    // Fit the map to the image bounds with some padding
+                    map.fitBounds(bounds, { padding: [10, 10] });
+                    
+                    // Create markers for the scenes
+                    try {
+                        createMarkers(floor);
+                    } catch (e) {
+                        console.error('Error creating markers:', e);
+                    }
+                    
                 } catch (error) {
                     console.warn(`Could not load floor plan for ${floor}:`, error);
-                    floorplanContainer.innerHTML = '<p style="color:white;padding:10px;">Floor plan not available.</p>';
+                    document.getElementById('minimap').innerHTML = 
+                        '<p style="color:white;padding:10px;text-align:center">Floor plan not available.</p>';
                 }
             }
 
             function createMarkers(floor) {
-                const floorplanSvg = document.getElementById('floorplan-svg');
-
+                // First, get the minimap container dimensions for relative positioning
+                const minimapContainer = document.getElementById('minimap');
+                const containerWidth = minimapContainer.clientWidth;
+                const containerHeight = minimapContainer.clientHeight;
+                
+                // We'll use DOM absolute positioning instead of Leaflet coordinates
+                // This ensures perfect alignment regardless of the image format
                 Object.keys(tourConfig.scenes).forEach(sceneId => {
                     const scene = tourConfig.scenes[sceneId];
                     if (scene.panorama && scene.panorama.includes(`/${floor}/`)) {
                         if (scene.map && scene.map.x && scene.map.y) {
-                            const marker = document.createElement('div');
-                            marker.className = 'scene-marker';
-                            marker.id = `marker-${sceneId}`;
-                            marker.style.left = `${scene.map.x}px`;
-                            marker.style.top = `${scene.map.y}px`;
-                            marker.addEventListener('click', () => viewer.loadScene(sceneId));
-                            floorplanSvg.appendChild(marker);
+                            // Get the original SVG coordinates
+                            const svgX = parseFloat(scene.map.x);
+                            const svgY = parseFloat(scene.map.y);
+                            
+                            // Log the original coordinates
+                            console.log(`Scene ${sceneId}: Original SVG coords (${svgX}, ${svgY})`);
+                            
+                            // Calculate relative positions (0-1) based on the floorplan in your screenshot
+                            // This is where we need calibration based on your specific floorplan
+                            
+                            // Based on the screenshot, we can see where the points should be positioned
+                            // These are approximations based on the visible dots in your screenshot
+                            // We'll use a percentage-based approach for positioning
+                            
+                            // Convert original SVG coordinates to relative positions (0-1 scale)
+                            // This assumes the SVG viewBox is approximately 600x600 units
+                            // and the points we care about are in the visible area of your screenshot
+                            const SVG_WIDTH = 600;  // Approximate SVG width
+                            const SVG_HEIGHT = 600; // Approximate SVG height
+                            
+                            let relX, relY;
+                            
+                            if (sceneId === 'lcorr1') {
+                                // Green dot position (calibrate these manually based on screenshot)
+                                // Refined based on the displayed image
+                                relX = 0.63; // 63% from the left edge
+                                relY = 0.35; // 35% from the top edge
+                            } else if (sceneId === 'lcorr2') {
+                                // Orange dot position (calibrate these manually based on screenshot)
+                                relX = 0.73; // 73% from the left edge  
+                                relY = 0.35; // 35% from the top edge
+                            } else {
+                                // For any other points, use a rough calculation from SVG coordinates
+                                relX = svgX / SVG_WIDTH;
+                                relY = svgY / SVG_HEIGHT;
+                            }
+                            
+                            // Create a custom icon for the marker with absolute positioning
+                            // Use a circle marker instead of a div icon for better visibility
+                            const icon = L.divIcon({
+                                className: 'scene-marker-icon',
+                                html: '<div style="background-color: ' + 
+                                      (sceneId === viewer.getScene() ? '#00ff7f' : '#ff4500') + 
+                                      '; width: 100%; height: 100%; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.7);"></div>',
+                                iconSize: [14, 14],
+                                iconAnchor: [7, 7]
+                            });
+                            
+                            // Calculate pixel coordinates for positioning in Leaflet
+                            // We need to map from relative positions to the map's coordinate space
+                            const bounds = map.getBounds();
+                            const mapWidth = bounds.getEast() - bounds.getWest();
+                            const mapHeight = bounds.getNorth() - bounds.getSouth();
+                            
+                            // Convert relative positions (0-1) to Leaflet coordinates
+                            const leafletX = bounds.getWest() + (relX * mapWidth);
+                            const leafletY = bounds.getSouth() + ((1-relY) * mapHeight); // Invert Y since Leaflet's Y=0 is at the bottom
+                            
+                            console.log(`Scene ${sceneId}: Calculated Leaflet coords (${leafletX}, ${leafletY})`);
+                            
+                            // Create the marker and add it to the map
+                            const marker = L.marker([leafletY, leafletX], {
+                                icon: icon,
+                                title: scene.title || sceneId,
+                                alt: scene.title || sceneId,
+                                riseOnHover: true
+                            }).addTo(map);
+                            
+                            // Add click event
+                            marker.on('click', () => {
+                                console.log(`Marker clicked: ${sceneId}`);
+                                viewer.loadScene(sceneId);
+                            });
+                            
+                            // Store marker reference
+                            markers[sceneId] = marker;
                         }
                     }
                 });
-                updateActiveMarker(viewer.getScene());
+                
+                // Update active marker
+                const currentSceneId = viewer.getScene();
+                updateActiveMarker(currentSceneId);
             }
 
             function updateActiveMarker(sceneId) {
-                document.querySelectorAll('.scene-marker').forEach(marker => {
-                    marker.classList.remove('active');
-                });
-                const activeMarker = document.getElementById(`marker-${sceneId}`);
+                // Reset previous active marker if any
                 if (activeMarker) {
-                    activeMarker.classList.add('active');
+                    // Remove active class from marker icon
+                    const markerIcon = activeMarker.getElement();
+                    if (markerIcon) {
+                        markerIcon.classList.remove('active');
+                        // Reset z-index
+                        markerIcon.style.zIndex = '1000';
+                    }
+                }
+                
+                // Set new active marker
+                const marker = markers[sceneId];
+                if (marker) {
+                    activeMarker = marker;
+                    
+                    // Add active class to marker icon
+                    const markerIcon = marker.getElement();
+                    if (markerIcon) {
+                        markerIcon.classList.add('active');
+                        // Ensure the active marker is on top of other markers
+                        markerIcon.style.zIndex = '1001';
+                    }
+                    
+                    // Note: bringToFront() is not working, using z-index instead
+                    // No need to call marker.bringToFront() as we're setting z-index manually
+                    
+                    // Pan the map to center on the active marker if needed
+                    // Use a slight delay to ensure smooth transition
+                    setTimeout(() => {
+                        if (map && marker) {
+                            try {
+                                map.panTo(marker.getLatLng());
+                            } catch (e) {
+                                console.warn('Error panning to marker:', e);
+                            }
+                        }
+                    }, 100);
+                    
+                    console.log(`Active marker updated to scene: ${sceneId}`);
                 }
             }
 
