@@ -3,11 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KKU 360° Virtual Tour - Poramet Chomphoochit</title>
+    <title>KKU360°</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="src/out.css"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Ad Splash Overlay */
+        #ad-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        #ad-container {
+            position: relative;
+            max-width: 90%;
+            max-height: 80%;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            transform: scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        #ad-container.show {
+            transform: scale(1);
+        }
+        
+        #ad-container img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        
+        #ad-close-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #A73B24;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 30px;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        #ad-close-btn:hover {
+            background-color: #c04b31;
+            transform: translateX(-50%) scale(1.05);
+        }
+        
+        #ad-close-btn.show {
+            opacity: 1;
+        }
+        
         /* Custom animations for feature cards */
         .feature-card {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -126,6 +190,58 @@
     </style>
 </head>
 <body class="min-h-screen" style="background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 30%, #2a1f1f 60%, #1a1a1a 100%)">
+    <!-- Ad Overlay -->
+    <div id="ad-overlay">
+        <div id="ad-container">
+            <!-- Images will be injected via JavaScript based on device -->
+            <button id="ad-close-btn" style="display: none;">Close Ad</button>
+        </div>
+    </div>
+    
+    <script>
+        // Ad display functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const adOverlay = document.getElementById('ad-overlay');
+            const adContainer = document.getElementById('ad-container');
+            const closeBtn = document.getElementById('ad-close-btn');
+            
+            // Determine if we're on mobile
+            const isMobile = window.innerWidth < 768;
+            
+            // Create the image element
+            const adImage = document.createElement('img');
+            adImage.src = isMobile 
+                ? 'src/images/ADS_MOBILE.png' 
+                : 'src/images/ADS_DESKTOP.png';
+            adImage.alt = "Advertisement";
+            adContainer.insertBefore(adImage, closeBtn);
+            
+            // Show the ad with animation
+            setTimeout(() => {
+                adOverlay.style.opacity = "1";
+                setTimeout(() => {
+                    adContainer.classList.add('show');
+                }, 100);
+            }, 100);
+            
+            // Make close button appear after 2 seconds
+            setTimeout(() => {
+                closeBtn.style.display = "block";
+                setTimeout(() => {
+                    closeBtn.classList.add('show');
+                }, 50);
+            }, 2000);
+            
+            // Close button functionality
+            closeBtn.addEventListener('click', () => {
+                adOverlay.style.opacity = "0";
+                adContainer.classList.remove('show');
+                setTimeout(() => {
+                    adOverlay.style.display = "none";
+                }, 500);
+            });
+        });
+    </script>
     <!-- Navigation -->
     <nav class="p-6">
         <div class="container mx-auto">
@@ -142,7 +258,7 @@
             <!-- Hero Section -->
             <div class="mb-12">
                                 <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                    Explore in 
+                    KKU
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-orange-400 to-red-400">
                         360°
                     </span>
@@ -167,7 +283,7 @@
                         <i class="fas fa-map"></i>
                     </div>
                     <h3 class="feature-title text-xl font-semibold mb-3">Interactive Map</h3>
-                    <p class="feature-text">Real-time minimap shows your location and viewing direction</p>
+                    <p class="feature-text">Multiple viewpoints and really nice navigation</p>
                 </div>
                 <div class="feature-card amber-glow backdrop-blur-sm rounded-xl p-8 cursor-pointer">
                     <div class="feature-icon text-3xl" style="color: #B45309;">
