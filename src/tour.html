@@ -37,7 +37,7 @@
             font-size: 12px;
             cursor: pointer;
             z-index: 1000;
-            display: none; /* Hide by default, show with 'D' key */
+            display: block; /* Show by default for easier adjustment */
         }
         
         /* Debug panel for adjusting marker positions */
@@ -53,6 +53,8 @@
             font-size: 12px;
             width: 280px;
             z-index: 1001;
+            max-height: 80vh;
+            overflow-y: auto;
             display: none;
         }
         
@@ -65,9 +67,43 @@
             width: 80px;
         }
         
-        #debug-panel input {
+        #debug-panel input[type="number"] {
             width: 60px;
             margin: 2px;
+        }
+        
+        #debug-panel input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        
+        .position-sliders {
+            margin-top: 8px;
+            padding-top: 5px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .debug-coordinates {
+            font-family: monospace;
+            margin: 5px 0;
+            color: #aaffaa;
+        }
+        
+        #marker-preview {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background-color: orange;
+            border-radius: 50%;
+            border: 2px solid white;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        
+        .slider-value {
+            display: inline-block;
+            width: 40px;
+            text-align: right;
         }
         #panorama {
             width: 100%;
@@ -92,7 +128,7 @@
         /* Custom Leaflet marker styles */
         .scene-marker-icon {
             border-radius: 50%;
-            border: 2px solid white !important;
+            border: 3px solid white !important;
             background-color: #ff4500 !important; /* Orange-red color */
             box-shadow: 0 0 8px rgba(0, 0, 0, 0.7) !important;
             transition: all 0.3s ease;
@@ -100,6 +136,7 @@
             /* Override any Leaflet default styles */
             margin: 0 !important;
             padding: 0 !important;
+            opacity: 0.9 !important;
         }
         .scene-marker-icon.active {
             background-color: #00ff7f !important; /* Bright green for active marker */
@@ -107,16 +144,40 @@
             box-shadow: 0 0 15px #00ff7f !important;
             transform: scale(1.5);
             z-index: 1001 !important; /* Active marker is above others */
+            opacity: 1 !important;
         }
         /* Special styling for known markers */
         .lcorr1-marker {
-            background-color: #FF6347 !important; /* Tomato */
+            background-color: #00FF7F !important; /* Green */
         }
         .lcorr2-marker {
-            background-color: #4682B4 !important; /* SteelBlue */
+            background-color: #FF8C00 !important; /* Dark Orange */
         }
-        .lcorr1-marker.active, .lcorr2-marker.active {
-            background-color: #32CD32 !important; /* LimeGreen */
+        .lcorr3-marker {
+            background-color: #FF4500 !important; /* Red-Orange */
+        }
+        .lcorr1-marker.active {
+            background-color: #00FF00 !important; /* Brighter Green */
+            box-shadow: 0 0 20px #00FF00 !important;
+        }
+        .lcorr2-marker.active {
+            background-color: #FFFF00 !important; /* Yellow */
+            box-shadow: 0 0 20px #FFFF00 !important;
+        }
+        .lcorr3-marker.active {
+            background-color: #FF0000 !important; /* Red */
+            box-shadow: 0 0 20px #FF0000 !important;
+        }
+        
+        /* Add animation to active marker */
+        @keyframes pulse {
+            0% { transform: scale(1.5); }
+            50% { transform: scale(1.7); }
+            100% { transform: scale(1.5); }
+        }
+        
+        .scene-marker-icon.active {
+            animation: pulse 1.5s infinite;
         }
         /* Fix for Leaflet default marker z-index and styling issues */
         .leaflet-marker-icon {
@@ -290,18 +351,122 @@
                 function createMarkerAdjustmentControls() {
                     markerControls.innerHTML = '';
                     
+                    // Add instructions
+                    const instructions = document.createElement('div');
+                    instructions.innerHTML = `
+                        <p style="margin-top:0">Click anywhere on the floorplan to see coordinates. 
+                        Use sliders to fine-tune marker positions.</p>
+                    `;
+                    markerControls.appendChild(instructions);
+                    
+                    // Add relative position adjustment controls
+                    const relativeControls = document.createElement('div');
+                    relativeControls.innerHTML = `
+                        <h4>Relative Position Adjustment</h4>
+                        <p>These sliders adjust all markers at once:</p>
+                        <div>
+                            <label>X Offset:</label> <span class="slider-value" id="global-x-value">0</span><br>
+                            <input type="range" min="-0.5" max="0.5" step="0.01" value="0" id="global-x-offset">
+                        </div>
+                        <div>
+                            <label>Y Offset:</label> <span class="slider-value" id="global-y-value">0</span><br>
+                            <input type="range" min="-0.5" max="0.5" step="0.01" value="0" id="global-y-offset">
+                        </div>
+                        <div>
+                            <label>Scale:</label> <span class="slider-value" id="global-scale-value">1.0</span><br>
+                            <input type="range" min="0.5" max="2" step="0.05" value="1" id="global-scale">
+                        </div>
+                        <button id="apply-global">Apply to All Markers</button>
+                        <hr>
+                    `;
+                    markerControls.appendChild(relativeControls);
+                    
+                    // Setup global control event listeners
+                    document.getElementById('global-x-offset').addEventListener('input', function(e) {
+                        document.getElementById('global-x-value').textContent = e.target.value;
+                    });
+                    
+                    document.getElementById('global-y-offset').addEventListener('input', function(e) {
+                        document.getElementById('global-y-value').textContent = e.target.value;
+                    });
+                    
+                    document.getElementById('global-scale').addEventListener('input', function(e) {
+                        document.getElementById('global-scale-value').textContent = e.target.value;
+                    });
+                    
+                    document.getElementById('apply-global').addEventListener('click', function() {
+                        const xOffset = parseFloat(document.getElementById('global-x-offset').value);
+                        const yOffset = parseFloat(document.getElementById('global-y-offset').value);
+                        const scale = parseFloat(document.getElementById('global-scale').value);
+                        
+                        Object.keys(tourConfig.scenes).forEach(sceneId => {
+                            const scene = tourConfig.scenes[sceneId];
+                            if (scene.map && scene.map.x && scene.map.y && scene.panorama.includes(`/${currentFloor}/`)) {
+                                // Calculate new position with offset and scale
+                                const origX = parseFloat(scene.map.x);
+                                const origY = parseFloat(scene.map.y);
+                                
+                                const REFERENCE_WIDTH = 440;
+                                const REFERENCE_HEIGHT = 280;
+                                
+                                // Apply scale and offset
+                                const relX = (origX / REFERENCE_WIDTH) * scale + xOffset;
+                                const relY = (origY / REFERENCE_HEIGHT) * scale + yOffset;
+                                
+                                // Convert back to original coordinate system
+                                const newX = relX * REFERENCE_WIDTH;
+                                const newY = relY * REFERENCE_HEIGHT;
+                                
+                                // Store override
+                                window.markerPositionOverrides[sceneId] = { x: newX, y: newY };
+                                
+                                // Update input fields if they exist
+                                const xInput = document.getElementById(`${sceneId}-x`);
+                                const yInput = document.getElementById(`${sceneId}-y`);
+                                if (xInput) xInput.value = newX.toFixed(2);
+                                if (yInput) yInput.value = newY.toFixed(2);
+                                
+                                // Update marker position
+                                updateMarkerPosition(sceneId, newX, newY);
+                            }
+                        });
+                        
+                        console.log(`Applied global adjustments: xOffset=${xOffset}, yOffset=${yOffset}, scale=${scale}`);
+                    });
+                    
+                    // Add individual marker controls
                     Object.keys(tourConfig.scenes).forEach(sceneId => {
                         const scene = tourConfig.scenes[sceneId];
                         if (scene.map && scene.map.x && scene.map.y && scene.panorama.includes(`/${currentFloor}/`)) {
+                            // Get current position (use override if available)
+                            let currentX = scene.map.x;
+                            let currentY = scene.map.y;
+                            
+                            if (window.markerPositionOverrides && window.markerPositionOverrides[sceneId]) {
+                                currentX = window.markerPositionOverrides[sceneId].x;
+                                currentY = window.markerPositionOverrides[sceneId].y;
+                            }
+                            
                             const div = document.createElement('div');
                             div.innerHTML = `
-                                <p><strong>${sceneId}</strong></p>
+                                <h4>${sceneId} <span id="marker-preview" class="${sceneId}-marker"></span></h4>
+                                <div class="debug-coordinates" id="${sceneId}-coords">
+                                    Current: (${currentX.toFixed(2)}, ${currentY.toFixed(2)})
+                                </div>
                                 <div>
                                     <label>X:</label>
-                                    <input type="number" step="0.01" id="${sceneId}-x" value="${scene.map.x}">
+                                    <input type="number" step="1" id="${sceneId}-x" value="${currentX.toFixed(2)}">
                                     <label>Y:</label>
-                                    <input type="number" step="0.01" id="${sceneId}-y" value="${scene.map.y}">
+                                    <input type="number" step="1" id="${sceneId}-y" value="${currentY.toFixed(2)}">
                                     <button id="${sceneId}-update">Update</button>
+                                </div>
+                                <div class="position-sliders">
+                                    <label>Fine X:</label> <span class="slider-value" id="${sceneId}-rel-x-value">0</span><br>
+                                    <input type="range" min="-0.2" max="0.2" step="0.01" value="0" id="${sceneId}-rel-x">
+                                </div>
+                                <div>
+                                    <label>Fine Y:</label> <span class="slider-value" id="${sceneId}-rel-y-value">0</span><br>
+                                    <input type="range" min="-0.2" max="0.2" step="0.01" value="0" id="${sceneId}-rel-y">
                                 </div>
                             `;
                             markerControls.appendChild(div);
@@ -317,7 +482,44 @@
                                 // Update marker position
                                 updateMarkerPosition(sceneId, newX, newY);
                                 
+                                // Update coordinate display
+                                document.getElementById(`${sceneId}-coords`).textContent = `Current: (${newX.toFixed(2)}, ${newY.toFixed(2)})`;
+                                
                                 console.log(`Updated ${sceneId} position to (${newX}, ${newY})`);
+                            });
+                            
+                            // Add event listeners for fine adjustment sliders
+                            const relXSlider = document.getElementById(`${sceneId}-rel-x`);
+                            const relYSlider = document.getElementById(`${sceneId}-rel-y`);
+                            
+                            relXSlider.addEventListener('input', function(e) {
+                                document.getElementById(`${sceneId}-rel-x-value`).textContent = e.target.value;
+                            });
+                            
+                            relYSlider.addEventListener('input', function(e) {
+                                document.getElementById(`${sceneId}-rel-y-value`).textContent = e.target.value;
+                            });
+                            
+                            relXSlider.addEventListener('change', function(e) {
+                                const relOffset = parseFloat(e.target.value);
+                                let newX = parseFloat(document.getElementById(`${sceneId}-x`).value);
+                                newX += relOffset * 100; // Scale for better precision
+                                
+                                document.getElementById(`${sceneId}-x`).value = newX.toFixed(2);
+                                document.getElementById(`${sceneId}-update`).click();
+                                e.target.value = 0; // Reset slider
+                                document.getElementById(`${sceneId}-rel-x-value`).textContent = '0';
+                            });
+                            
+                            relYSlider.addEventListener('change', function(e) {
+                                const relOffset = parseFloat(e.target.value);
+                                let newY = parseFloat(document.getElementById(`${sceneId}-y`).value);
+                                newY += relOffset * 100; // Scale for better precision
+                                
+                                document.getElementById(`${sceneId}-y`).value = newY.toFixed(2);
+                                document.getElementById(`${sceneId}-update`).click();
+                                e.target.value = 0; // Reset slider
+                                document.getElementById(`${sceneId}-rel-y-value`).textContent = '0';
                             });
                         }
                     });
@@ -553,13 +755,47 @@
                         const relX = (e.latlng.lng - bounds.getWest()) / mapWidth;
                         const relY = 1 - ((e.latlng.lat - bounds.getSouth()) / mapHeight);
                         
-                        console.log(`Clicked at relative position: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
+                        // Convert to the coordinate system used in tour-config.json
+                        const REFERENCE_WIDTH = 440;
+                        const REFERENCE_HEIGHT = 280;
+                        const coordX = relX * REFERENCE_WIDTH;
+                        const coordY = relY * REFERENCE_HEIGHT;
+                        
+                        console.log(`Clicked at coordinates: (${coordX.toFixed(1)}, ${coordY.toFixed(1)})`);
+                        console.log(`Relative position: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
                         console.log(`For calibration, use: relX = ${relX.toFixed(3)}; relY = ${relY.toFixed(3)};`);
                         
-                        // If in development mode, show an alert with the position
-                        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                            alert(`Position: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
-                        }
+                        // Create temporary marker at click position
+                        const clickMarker = L.circleMarker([e.latlng.lat, e.latlng.lng], {
+                            radius: 5,
+                            color: 'yellow',
+                            fillColor: 'yellow',
+                            fillOpacity: 0.8
+                        }).addTo(map);
+                        
+                        // Remove after 3 seconds
+                        setTimeout(() => {
+                            map.removeLayer(clickMarker);
+                        }, 3000);
+                        
+                        // Display coordinates on screen
+                        const coordDisplay = document.createElement('div');
+                        coordDisplay.style.position = 'absolute';
+                        coordDisplay.style.top = '50%';
+                        coordDisplay.style.left = '50%';
+                        coordDisplay.style.transform = 'translate(-50%, -50%)';
+                        coordDisplay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                        coordDisplay.style.color = 'white';
+                        coordDisplay.style.padding = '10px';
+                        coordDisplay.style.borderRadius = '5px';
+                        coordDisplay.style.zIndex = '2000';
+                        coordDisplay.style.pointerEvents = 'none';
+                        coordDisplay.innerHTML = `Coordinates: (${coordX.toFixed(1)}, ${coordY.toFixed(1)})`;
+                        
+                        document.body.appendChild(coordDisplay);
+                        setTimeout(() => {
+                            document.body.removeChild(coordDisplay);
+                        }, 2000);
                     });
                     
                     // Add the image overlay to the map with proper handling
@@ -704,36 +940,36 @@
                             const imgWidth = map.imgWidth || REFERENCE_WIDTH;
                             const imgHeight = map.imgHeight || REFERENCE_HEIGHT;
                             
-                            // Based on your first image, all three points are in a row in the top corridor
-                            // According to tour-config.json:
-                            // lcorr1: x=68, y=154
-                            // lcorr2: x=93, y=154
-                            // lcorr3: x=141, y=154
+                            // Based on your latest screenshot, we need to adjust the positions
+                            // The markers should be centered in the corridor area of your floorplan
                             
                             console.log(`Processing marker for scene ${sceneId} with coords (${svgX}, ${svgY})`);
                             
-                            // Convert from the coordinates in tour-config.json to relative positions
-                            // Based on your first image
+                            // Set hard-coded positions based on your latest screenshot
                             if (sceneId === 'lcorr1') {
-                                // Left-most marker in corridor
-                                relX = 68 / REFERENCE_WIDTH;
-                                relY = 154 / REFERENCE_HEIGHT;
-                                console.log(`Using position from tour-config.json for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
+                                // Green marker (leftmost in screenshot)
+                                relX = 0.36; // 36% from left
+                                relY = 0.45; // 45% from top
+                                console.log(`Using fixed calibration for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
                             } else if (sceneId === 'lcorr2') {
-                                // Middle marker in corridor
-                                relX = 93 / REFERENCE_WIDTH;
-                                relY = 154 / REFERENCE_HEIGHT;
-                                console.log(`Using position from tour-config.json for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
+                                // Orange marker (middle in screenshot)
+                                relX = 0.41; // 41% from left
+                                relY = 0.45; // 45% from top
+                                console.log(`Using fixed calibration for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
                             } else if (sceneId === 'lcorr3') {
-                                // Right-most marker in corridor
-                                relX = 141 / REFERENCE_WIDTH;
-                                relY = 154 / REFERENCE_HEIGHT;
-                                console.log(`Using position from tour-config.json for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
+                                // Red marker (rightmost in screenshot)
+                                relX = 0.47; // 47% from left
+                                relY = 0.45; // 45% from top
+                                console.log(`Using fixed calibration for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
                             } else {
-                                // For other points, use a direct calculation
-                                relX = svgX / REFERENCE_WIDTH;
-                                relY = svgY / REFERENCE_HEIGHT;
-                                console.log(`Calculated relative position for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)}) from coords (${svgX}, ${svgY})`);
+                                // For other points, use a direct calculation with offset correction
+                                // Apply a transformation to better align with the visible floorplan
+                                const TRANSFORM_X = 0.25; // Horizontal offset adjustment
+                                const TRANSFORM_Y = 0.15; // Vertical offset adjustment
+                                
+                                relX = (svgX / REFERENCE_WIDTH) + TRANSFORM_X;
+                                relY = (svgY / REFERENCE_HEIGHT) + TRANSFORM_Y;
+                                console.log(`Calculated adjusted position for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)}) from coords (${svgX}, ${svgY})`);
                             }
                             
                             // Create a custom icon for the marker with unique identifier
