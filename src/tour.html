@@ -93,6 +93,19 @@
         .scene-title.visible {
             opacity: 1;
         }
+        
+        /* Hide Pannellum's default loading elements */
+        .pnlm-load-box, .pnlm-load-button, .pnlm-lbox, .pnlm-loading, 
+        .pnlm-lbar, .pnlm-lbar-fill, .pnlm-lmsg {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+        
+        /* Ensure our loading bar is above Pannellum elements */
+        #loading-bar-container {
+            z-index: 10000;
+        }
     </style>
 </head>
 <body>
@@ -189,13 +202,17 @@
                 // Set initial scene title
                 updateSceneTitle(firstSceneId);
                 
+                // Create a new viewer instance with default loading elements hidden
                 viewer = pannellum.viewer('panorama', {
                     "default": {
                         "firstScene": firstSceneId,
                         "sceneFadeDuration": config.default.sceneFadeDuration || 1000,
                         "autoLoad": true,
                         "compass": false,
-                        "hotSpotDebug": false
+                        "hotSpotDebug": false,
+                        "showLoadingBox": false, // Hide the default loading box
+                        "showZoomCtrl": true,
+                        "showFullscreenCtrl": true
                     },
                     "scenes": config.scenes
                 });
