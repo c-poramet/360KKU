@@ -35,33 +35,159 @@
         .pnlm-hotspot:hover {
             box-shadow: 0 0 25px rgba(59, 130, 246, 1);
         }
+
+        /* Loading indicator styles */
+        #loading-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        #loading-bar {
+            height: 4px;
+            width: 180px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            margin: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        #loading-progress {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 1));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        .loading-active {
+            opacity: 1 !important;
+        }
+
+        .scene-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .scene-title.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
 
     <div id="panorama"></div>
+    
+    <!-- Loading bar container -->
+    <div id="loading-bar-container">
+        <div id="loading-bar">
+            <div id="loading-progress"></div>
+        </div>
+    </div>
+    
+    <!-- Scene title display -->
+    <div id="scene-title" class="scene-title"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let viewer;
+            let tourConfig;
+            let loadingTimer;
+            let currentSceneId;
+            
+            const loadingBarContainer = document.getElementById('loading-bar-container');
+            const loadingProgress = document.getElementById('loading-progress');
+            const sceneTitle = document.getElementById('scene-title');
+            
+            // Loading indicator functions
+            function showLoading() {
+                // Reset progress
+                loadingProgress.style.width = '0%';
+                // Show loading bar
+                loadingBarContainer.classList.add('loading-active');
+                
+                // Animate loading progress
+                let progress = 0;
+                clearInterval(loadingTimer);
+                loadingTimer = setInterval(() => {
+                    // Increase progress more quickly at the start, then slow down
+                    const increment = progress < 70 ? 2 : (progress < 90 ? 0.5 : 0.1);
+                    progress = Math.min(progress + increment, 95); // Never reach 100% until complete
+                    loadingProgress.style.width = `${progress}%`;
+                }, 50);
+            }
+            
+            function hideLoading() {
+                // Quickly complete the loading animation
+                loadingProgress.style.width = '100%';
+                
+                // Hide the loading bar after a short delay
+                setTimeout(() => {
+                    loadingBarContainer.classList.remove('loading-active');
+                    clearInterval(loadingTimer);
+                    setTimeout(() => {
+                        loadingProgress.style.width = '0%';
+                    }, 300);
+                }, 300);
+            }
+            
+            function updateSceneTitle(sceneId) {
+                const scene = tourConfig.scenes[sceneId];
+                if (scene && scene.title) {
+                    sceneTitle.textContent = scene.title;
+                    sceneTitle.classList.add('visible');
+                    
+                    // Hide title after 5 seconds
+                    setTimeout(() => {
+                        sceneTitle.classList.remove('visible');
+                    }, 5000);
+                }
+            }
             
             async function loadTour() {
                 try {
+                    showLoading();
                     const response = await fetch('tour-config.json');
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    const tourConfig = await response.json();
+                    tourConfig = await response.json();
                     console.log('Tour configuration loaded:', tourConfig);
                     initializeViewer(tourConfig);
                 } catch (error) {
                     console.error("Could not load tour configuration:", error);
                     document.getElementById('panorama').innerText = 'Error: Could not load tour. Please check console for details.';
+                    hideLoading();
                 }
             }
 
             function initializeViewer(config) {
                 const firstSceneId = config.default.firstScene || Object.keys(config.scenes)[0];
+                currentSceneId = firstSceneId;
+                
+                // Set initial scene title
+                updateSceneTitle(firstSceneId);
                 
                 viewer = pannellum.viewer('panorama', {
                     "default": {
@@ -74,9 +200,22 @@
                     "scenes": config.scenes
                 });
                 
-                // Add scene change event listener for logging
+                // Add event listeners for loading indicators
                 viewer.on('scenechange', (sceneId) => {
-                    console.log(`Scene changed to: ${sceneId}`);
+                    console.log(`Scene changing to: ${sceneId}`);
+                    currentSceneId = sceneId;
+                    showLoading();
+                });
+                
+                viewer.on('load', () => {
+                    console.log(`Scene loaded: ${currentSceneId}`);
+                    hideLoading();
+                    updateSceneTitle(currentSceneId);
+                });
+                
+                viewer.on('error', (errorMsg) => {
+                    console.error("Pannellum error:", errorMsg);
+                    hideLoading();
                 });
             }
 
