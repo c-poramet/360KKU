@@ -77,29 +77,38 @@
 
         .scene-title {
             position: absolute;
-            top: 20px;
+            bottom: 30px; /* Position at the bottom */
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            z-index: 10;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 20px; /* Increased font size */
+            font-weight: 500; /* Medium weight for better visibility */
+            z-index: 10000; /* Ensure it's above all Pannellum elements */
             opacity: 0;
             transition: opacity 0.5s ease;
+            text-align: center; /* Center the text */
+            min-width: 200px; /* Minimum width */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Add subtle shadow */
+            pointer-events: none; /* Allow clicks to pass through */
         }
 
         .scene-title.visible {
             opacity: 1;
         }
         
-        /* Hide Pannellum's default loading elements */
+        /* Hide Pannellum's default loading elements and title */
         .pnlm-load-box, .pnlm-load-button, .pnlm-lbox, .pnlm-loading, 
-        .pnlm-lbar, .pnlm-lbar-fill, .pnlm-lmsg {
+        .pnlm-lbar, .pnlm-lbar-fill, .pnlm-lmsg,
+        .pnlm-panorama-info, .pnlm-title-box, .pnlm-author-box {
             display: none !important;
             opacity: 0 !important;
             visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
         }
         
         /* Ensure our loading bar is above Pannellum elements */
@@ -171,10 +180,13 @@
                     sceneTitle.textContent = scene.title;
                     sceneTitle.classList.add('visible');
                     
-                    // Hide title after 5 seconds
+                    // Keep the title visible longer (10 seconds) before fading out
+                    // Comment out or remove this block to keep title visible permanently
+                    /*
                     setTimeout(() => {
                         sceneTitle.classList.remove('visible');
-                    }, 5000);
+                    }, 10000);
+                    */
                 }
             }
             
@@ -202,6 +214,14 @@
                 // Set initial scene title
                 updateSceneTitle(firstSceneId);
                 
+                // Process scenes to ensure titles don't show up in Pannellum's native UI
+                const processedScenes = JSON.parse(JSON.stringify(config.scenes));
+                for (const sceneId in processedScenes) {
+                    // Keep the title in our config for our custom display
+                    // but ensure Pannellum doesn't use it for its built-in title display
+                    processedScenes[sceneId].showTitle = false;
+                }
+                
                 // Create a new viewer instance with default loading elements hidden
                 viewer = pannellum.viewer('panorama', {
                     "default": {
@@ -212,9 +232,11 @@
                         "hotSpotDebug": false,
                         "showLoadingBox": false, // Hide the default loading box
                         "showZoomCtrl": true,
-                        "showFullscreenCtrl": true
+                        "showFullscreenCtrl": true,
+                        "showTitle": false, // Disable Pannellum's built-in title
+                        "title": false // Disable built-in title
                     },
-                    "scenes": config.scenes
+                    "scenes": processedScenes
                 });
                 
                 // Add event listeners for loading indicators
