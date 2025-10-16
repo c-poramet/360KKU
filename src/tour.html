@@ -62,6 +62,16 @@
             transform: scale(1.5);
             z-index: 1001 !important; /* Active marker is above others */
         }
+        /* Special styling for known markers */
+        .lcorr1-marker {
+            background-color: #FF6347 !important; /* Tomato */
+        }
+        .lcorr2-marker {
+            background-color: #4682B4 !important; /* SteelBlue */
+        }
+        .lcorr1-marker.active, .lcorr2-marker.active {
+            background-color: #32CD32 !important; /* LimeGreen */
+        }
         /* Fix for Leaflet default marker z-index and styling issues */
         .leaflet-marker-icon {
             z-index: 1000 !important;
@@ -157,6 +167,12 @@
                     const currentSceneId = viewer.getScene();
                     updateActiveMarker(currentSceneId);
                 });
+                
+                // Add scene change event listener to update the active marker
+                viewer.on('scenechange', (sceneId) => {
+                    console.log(`Scene changed to: ${sceneId}`);
+                    updateActiveMarker(sceneId);
+                });
             }
             
             function initializeMap() {
@@ -192,10 +208,10 @@
 
             async function loadFloorPlan(floor) {
                 try {
-                    // Clear existing markers
+                    // Clear existing markers first
                     Object.values(markers).forEach(marker => {
                         try {
-                            marker.remove();
+                            map.removeLayer(marker);
                         } catch (e) {
                             console.warn('Error removing marker:', e);
                         }
@@ -205,7 +221,7 @@
                     // Remove existing floorplan image if any
                     if (floorplanImage) {
                         try {
-                            floorplanImage.remove();
+                            map.removeLayer(floorplanImage);
                         } catch (e) {
                             console.warn('Error removing floorplan image:', e);
                         }
@@ -233,46 +249,84 @@
                         });
                     };
                     
-                    // First try SVG (using your svg directly)
-                    let imgUrl = `images/${floor}/floorplan.svg`;
-                    let imgType = 'svg';
-                    let imgData;
+                    // Decide which image type to use based on the floor
+                    let imgUrl, imgData;
                     
+                    // Try to load the SVG first
                     try {
+                        imgUrl = `images/${floor}/floorplan.svg`;
                         imgData = await loadImage(imgUrl, 'svg');
                     } catch (e) {
                         // If SVG fails, try PNG
-                        console.log('SVG load failed, trying PNG');
-                        imgUrl = `images/${floor}/floorplan.png`;
-                        imgType = 'png';
-                        
                         try {
+                            imgUrl = `images/${floor}/floorplan.png`;
                             imgData = await loadImage(imgUrl, 'png');
-                        } catch (e) {
+                        } catch (e2) {
                             throw new Error('Both SVG and PNG floorplan loading failed');
                         }
                     }
                     
-                    // If we get here, we have successfully loaded an image
+                    console.log(`Loading ${imgData.type} floor plan: ${imgData.width}x${imgData.height}`);
+                    
                     // Set map bounds based on image dimensions
                     const bounds = [[0, 0], [imgData.height, imgData.width]];
-                    console.log(`Setting map bounds for ${imgType}:`, bounds);
+                    
+                    // Store image information globally
+                    window.floorplanInfo = {
+                        type: imgData.type,
+                        width: imgData.width,
+                        height: imgData.height,
+                        url: imgData.url
+                    };
+                    
+                    console.log('Floor plan info:', window.floorplanInfo);
+                    
+                    // Reset the map view completely before adding new layers
+                    if (map) {
+                        try {
+                            map.off();
+                            map.remove();
+                        } catch (e) {
+                            console.warn('Error removing map:', e);
+                        }
+                    }
+                    
+                    // Re-initialize the map with improved configuration
+                    map = L.map('minimap', {
+                        crs: L.CRS.Simple,
+                        minZoom: -2,
+                        maxZoom: 2,
+                        zoomControl: false,
+                        attributionControl: false,
+                        doubleClickZoom: false,
+                        dragging: false,
+                        fadeAnimation: true,
+                        markerZoomAnimation: false,
+                        inertia: false,
+                        preferCanvas: true, // Use Canvas renderer for better performance
+                        renderer: L.canvas(), // Explicitly set canvas renderer for markers
+                        trackResize: true
+                    });
                     
                     // Add the image overlay to the map
                     floorplanImage = L.imageOverlay(imgUrl, bounds).addTo(map);
                     
-                    // Store image dimensions for coordinate transformation
+                    // Store image dimensions
                     map.imgWidth = imgData.width;
                     map.imgHeight = imgData.height;
                     
-                    // Fit the map to the image bounds with some padding
-                    map.fitBounds(bounds, { padding: [10, 10] });
+                    // Fit the map to the image bounds
+                    map.fitBounds(bounds);
+                    
+                    // Wait a moment for the map to stabilize before adding markers
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     
                     // Create markers for the scenes
                     try {
                         createMarkers(floor);
                     } catch (e) {
                         console.error('Error creating markers:', e);
+                        throw e;
                     }
                     
                 } catch (error) {
@@ -280,13 +334,35 @@
                     document.getElementById('minimap').innerHTML = 
                         '<p style="color:white;padding:10px;text-align:center">Floor plan not available.</p>';
                 }
-            }
+            } // Closing brace for loadFloorPlan function
 
+            // Function to clear all markers
+            function clearMarkers() {
+                console.log('Clearing all markers...');
+                if (markers) {
+                    Object.values(markers).forEach(marker => {
+                        try {
+                            if (map && marker) {
+                                map.removeLayer(marker);
+                            }
+                        } catch (e) {
+                            console.warn('Error removing marker:', e);
+                        }
+                    });
+                    markers = {}; // Reset markers object
+                }
+                activeMarker = null; // Reset active marker reference
+            }
+            
             function createMarkers(floor) {
+                console.log(`Creating markers for floor: ${floor}`);
                 // First, get the minimap container dimensions for relative positioning
                 const minimapContainer = document.getElementById('minimap');
                 const containerWidth = minimapContainer.clientWidth;
                 const containerHeight = minimapContainer.clientHeight;
+                
+                // Clear any existing markers first
+                clearMarkers();
                 
                 // We'll use DOM absolute positioning instead of Leaflet coordinates
                 // This ensures perfect alignment regardless of the image format
@@ -298,67 +374,60 @@
                             const svgX = parseFloat(scene.map.x);
                             const svgY = parseFloat(scene.map.y);
                             
-                            // Log the original coordinates
                             console.log(`Scene ${sceneId}: Original SVG coords (${svgX}, ${svgY})`);
                             
-                            // Calculate relative positions (0-1) based on the floorplan in your screenshot
-                            // This is where we need calibration based on your specific floorplan
-                            
-                            // Based on the screenshot, we can see where the points should be positioned
-                            // These are approximations based on the visible dots in your screenshot
-                            // We'll use a percentage-based approach for positioning
-                            
-                            // Convert original SVG coordinates to relative positions (0-1 scale)
-                            // This assumes the SVG viewBox is approximately 600x600 units
-                            // and the points we care about are in the visible area of your screenshot
-                            const SVG_WIDTH = 600;  // Approximate SVG width
-                            const SVG_HEIGHT = 600; // Approximate SVG height
-                            
+                            // Use a consistent approach for all markers based on image dimensions
                             let relX, relY;
                             
+                            // Define reference dimensions for coordinate transformation
+                            // These are the dimensions used in the original SVG coordinates
+                            const SVG_WIDTH = 600;  // Reference SVG width
+                            const SVG_HEIGHT = 600; // Reference SVG height
+                            
+                            // Special calibration for known points
                             if (sceneId === 'lcorr1') {
-                                // Green dot position (calibrate these manually based on screenshot)
-                                // Refined based on the displayed image
-                                relX = 0.63; // 63% from the left edge
-                                relY = 0.35; // 35% from the top edge
+                                // Manual calibration for lcorr1 (left point)
+                                relX = 0.48;
+                                relY = 0.40;
+                                console.log(`Using calibrated position for ${sceneId}: (${relX}, ${relY})`);
                             } else if (sceneId === 'lcorr2') {
-                                // Orange dot position (calibrate these manually based on screenshot)
-                                relX = 0.73; // 73% from the left edge  
-                                relY = 0.35; // 35% from the top edge
+                                // Manual calibration for lcorr2 (right point)
+                                relX = 0.58;
+                                relY = 0.40;
+                                console.log(`Using calibrated position for ${sceneId}: (${relX}, ${relY})`);
                             } else {
-                                // For any other points, use a rough calculation from SVG coordinates
+                                // Calculate relative position based on SVG dimensions
                                 relX = svgX / SVG_WIDTH;
                                 relY = svgY / SVG_HEIGHT;
+                                console.log(`Using calculated position for ${sceneId}: (${relX}, ${relY}) from SVG coords (${svgX}, ${svgY})`);
                             }
                             
-                            // Create a custom icon for the marker with absolute positioning
-                            // Use a circle marker instead of a div icon for better visibility
+                            // Create a custom icon for the marker with unique identifier
+                            const isActive = sceneId === viewer.getScene();
+                            const markerClass = `scene-marker-icon ${sceneId}-marker`;
                             const icon = L.divIcon({
-                                className: 'scene-marker-icon',
-                                html: '<div style="background-color: ' + 
-                                      (sceneId === viewer.getScene() ? '#00ff7f' : '#ff4500') + 
-                                      '; width: 100%; height: 100%; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.7);"></div>',
-                                iconSize: [14, 14],
-                                iconAnchor: [7, 7]
+                                className: isActive ? `${markerClass} active` : markerClass,
+                                html: '', // Empty HTML content as we're using CSS for styling
+                                iconSize: [14, 14], // Fixed size for all markers
+                                iconAnchor: [7, 7]   // Center point of the marker
                             });
                             
-                            // Calculate pixel coordinates for positioning in Leaflet
-                            // We need to map from relative positions to the map's coordinate space
+                            // Calculate Leaflet coordinates from relative positions
                             const bounds = map.getBounds();
                             const mapWidth = bounds.getEast() - bounds.getWest();
                             const mapHeight = bounds.getNorth() - bounds.getSouth();
                             
-                            // Convert relative positions (0-1) to Leaflet coordinates
+                            // For Leaflet, we need to invert the Y coordinate since Leaflet's
+                            // coordinate system has y=0 at the bottom, while images have y=0 at the top
                             const leafletX = bounds.getWest() + (relX * mapWidth);
-                            const leafletY = bounds.getSouth() + ((1-relY) * mapHeight); // Invert Y since Leaflet's Y=0 is at the bottom
+                            const leafletY = bounds.getSouth() + ((1-relY) * mapHeight); // Invert Y
                             
-                            console.log(`Scene ${sceneId}: Calculated Leaflet coords (${leafletX}, ${leafletY})`);
+                            console.log(`Scene ${sceneId}: Calculated Leaflet coords (${leafletX}, ${leafletY}) from rel position (${relX}, ${relY})`);
                             
-                            // Create the marker and add it to the map
+                            // Create and add the marker to the map
                             const marker = L.marker([leafletY, leafletX], {
                                 icon: icon,
                                 title: scene.title || sceneId,
-                                alt: scene.title || sceneId,
                                 riseOnHover: true
                             }).addTo(map);
                             
