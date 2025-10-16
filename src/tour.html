@@ -188,44 +188,42 @@
                 const scene = tourConfig.scenes[sceneId];
                 const { x, y } = scene.map;
 
-                // First, fit the SVG to the container
-                minimap.fit();
-                minimap.center();
+                // First reset to default state
+                minimap.reset();
                 
-                // Get the SVG viewbox dimensions
-                const svgElement = document.querySelector('#floorplan-svg svg');
-                const viewBox = svgElement.viewBox.baseVal;
-                const svgWidth = viewBox.width;
-                const svgHeight = viewBox.height;
+                // Start with a moderate fixed zoom level instead of calculating one
+                const fixedZoom = 2.0;
                 
-                // Get container dimensions
+                // Apply the fixed zoom
+                minimap.zoom(fixedZoom);
+                
+                // Get container dimensions after zooming
                 const sizes = minimap.getSizes();
                 const containerWidth = sizes.width;
                 const containerHeight = sizes.height;
+                const realZoom = sizes.realZoom;
                 
-                // Calculate the ideal zoom to make markers an appropriate size
-                // We want the markers to be approximately 15-20px in the display
-                const markerSizeTarget = 18; // pixels
-                const markerRadius = 6; // from SVG
-                const idealZoom = markerSizeTarget / (markerRadius * 2);
+                // Calculate the point position after zoom
+                const pointX = x * realZoom;
+                const pointY = y * realZoom;
                 
-                // Apply zoom
-                minimap.zoom(idealZoom);
+                // Calculate pan position to center the marker
+                // We need to pan by: (container center) - (point position)
+                const panX = (containerWidth / 2) - pointX;
+                const panY = (containerHeight / 2) - pointY;
                 
-                // Get real zoom after applying
-                const realZoom = minimap.getSizes().realZoom;
+                // Log values for debugging
+                console.log('Centering minimap:', {
+                    scene: sceneId,
+                    markerPosition: { x, y },
+                    containerSize: { width: containerWidth, height: containerHeight },
+                    zoom: realZoom,
+                    pointPosition: { x: pointX, y: pointY },
+                    panPosition: { x: panX, y: panY }
+                });
                 
-                // Calculate the position to center the marker
-                // We need to convert SVG coordinates to screen coordinates
-                const screenX = x * realZoom;
-                const screenY = y * realZoom;
-                
-                // Calculate pan required to center this point
-                const panX = (containerWidth / 2) - screenX;
-                const panY = (containerHeight / 2) - screenY;
-                
-                // Set the pan position
-                minimap.pan({x: panX, y: panY});
+                // Apply the pan
+                minimap.pan({ x: panX, y: panY });
                 
                 // Highlight the active marker
                 updateActiveMarker(sceneId);
