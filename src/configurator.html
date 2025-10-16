@@ -304,6 +304,17 @@
                             <span id="fade-duration-display" class="bg-gray-700 px-2 py-1 rounded text-sm min-w-16 text-center">1000ms</span>
                         </div>
                     </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-300">Default Floor for Auto-paths:</label>
+                        <div class="flex items-center space-x-2">
+                            <select id="default-floor-select" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="auto">Auto-detect (from filename)</option>
+                                <option value="floor1">Floor 1</option>
+                                <option value="floor2">Floor 2</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -648,6 +659,23 @@
             const fadeDurationRange = document.getElementById('fade-duration-range');
             if (fadeDurationRange) {
                 fadeDurationRange.addEventListener('input', updateFadeDuration);
+            }
+            
+            // Default floor selection
+            const defaultFloorSelect = document.getElementById('default-floor-select');
+            if (defaultFloorSelect) {
+                // Load saved preference if exists
+                const savedFloor = localStorage.getItem('360kku-default-floor');
+                if (savedFloor) {
+                    defaultFloorSelect.value = savedFloor;
+                }
+                
+                // Add change event listener
+                defaultFloorSelect.addEventListener('change', function() {
+                    // Save the preference
+                    localStorage.setItem('360kku-default-floor', this.value);
+                    console.log(`Default floor for auto-paths set to: ${this.value}`);
+                });
             }
             
             // JSON export
@@ -1079,7 +1107,7 @@
                 dropZone.innerHTML = `
                     <i class="fas fa-check-circle text-2xl text-green-400 mb-2"></i>
                     <p class="text-green-300 mb-1">Image selected: ${file.name}</p>
-                    <p class="text-blue-300 text-xs mb-2">Auto-generated path: ${deploymentPath}</p>
+                    <p class="text-blue-300 text-xs mb-2">Auto-generated path: ${deploymentPath} ${getFloorIndicator(deploymentPath)}</p>
                     <button type="button" onclick="document.getElementById('panorama-file').click()" 
                             class="mt-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
                         Change Image
@@ -1128,12 +1156,21 @@
 
         /**
          * Generate deployment path based on filename
-         * Automatically detects floor level and places in correct directory
+         * Uses selected default floor or automatically detects floor level
          */
         function generateDeploymentPath(filename) {
             const cleanName = filename.toLowerCase();
             
-            // Detect floor level from filename
+            // Get the default floor setting
+            const defaultFloorSelect = document.getElementById('default-floor-select');
+            const defaultFloorSetting = defaultFloorSelect ? defaultFloorSelect.value : 'auto';
+            
+            // If specific floor is selected, use it
+            if (defaultFloorSetting === 'floor1' || defaultFloorSetting === 'floor2') {
+                return `images/${defaultFloorSetting}/${filename}`;
+            }
+            
+            // Otherwise, auto-detect floor level from filename
             let floorLevel = 'floor1'; // default
             
             if (cleanName.includes('floor2') || cleanName.includes('2nd') || cleanName.includes('second')) {
@@ -1148,6 +1185,18 @@
             
             // Generate the final path
             return `images/${floorLevel}/${filename}`;
+        }
+        
+        /**
+         * Get floor indicator badge for UI feedback
+         */
+        function getFloorIndicator(path) {
+            if (path.includes('/floor1/')) {
+                return '<span class="px-1.5 py-0.5 ml-1 bg-blue-600 text-white text-xs rounded-full">Floor 1</span>';
+            } else if (path.includes('/floor2/')) {
+                return '<span class="px-1.5 py-0.5 ml-1 bg-purple-600 text-white text-xs rounded-full">Floor 2</span>';
+            }
+            return '';
         }
 
         // ===========================

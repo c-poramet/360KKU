@@ -33,6 +33,27 @@
           "type": "scene",
           "text": "Go to LEFTEST",
           "sceneId": "453"
+        },
+        {
+          "pitch": 76.5,
+          "yaw": -115.3,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 1",
+          "sceneId": "2001"
+        },
+        {
+          "pitch": -9.4,
+          "yaw": 150.8,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        },
+        {
+          "pitch": -4.4,
+          "yaw": 102.4,
+          "type": "scene",
+          "text": "Go to Left Corridor Door",
+          "sceneId": "5"
         }
       ]
     },
@@ -952,6 +973,27 @@
           "type": "scene",
           "text": "Go to Right Corridor Door",
           "sceneId": "973"
+        },
+        {
+          "pitch": -7.6,
+          "yaw": -100,
+          "type": "scene",
+          "text": "Go to The Stair",
+          "sceneId": "stair"
+        },
+        {
+          "pitch": -14.4,
+          "yaw": 119.5,
+          "type": "scene",
+          "text": "Go to Exit (In/Out)",
+          "sceneId": "354"
+        },
+        {
+          "pitch": -14,
+          "yaw": -149.7,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
         }
       ]
     },
@@ -1587,6 +1629,667 @@
         }
       ]
     },
+    "2001": {
+      "title": "Upper Left Corridor 1",
+      "panorama": "images/floor2/2_001.jpg",
+      "map": {
+        "x": 72,
+        "y": 121
+      },
+      "hotSpots": [
+        {
+          "pitch": -34.8,
+          "yaw": 5.3,
+          "type": "scene",
+          "text": "Go to LEFTEST",
+          "sceneId": "453"
+        },
+        {
+          "pitch": -22.3,
+          "yaw": -105.2,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        },
+        {
+          "pitch": -17.1,
+          "yaw": -125.9,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        },
+        {
+          "pitch": -13.1,
+          "yaw": -172.5,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 3",
+          "sceneId": "2003"
+        },
+        {
+          "pitch": -5,
+          "yaw": -172.8,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor Door",
+          "sceneId": "2006"
+        },
+        {
+          "pitch": -85.9,
+          "yaw": -11.9,
+          "type": "scene",
+          "text": "PHASING TIME!",
+          "sceneId": "1"
+        }
+      ]
+    },
+    "2002": {
+      "title": "Upper Left Corridor 2",
+      "panorama": "images/floor2/2_002.jpg",
+      "map": {
+        "x": 102,
+        "y": 120
+      },
+      "hotSpots": []
+    },
+    "2003": {
+      "title": "Upper Left Corridor 3",
+      "panorama": "images/floor2/2_003.jpg",
+      "map": {
+        "x": 154,
+        "y": 123
+      },
+      "hotSpots": [
+        {
+          "pitch": -15.4,
+          "yaw": 29.3,
+          "type": "scene",
+          "text": "Go to Upper Left Classroom 1",
+          "sceneId": "2003R"
+        },
+        {
+          "pitch": -14.4,
+          "yaw": 115.5,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 4",
+          "sceneId": "2004"
+        },
+        {
+          "pitch": -7.2,
+          "yaw": 117,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor Door",
+          "sceneId": "2006"
+        },
+        {
+          "pitch": -23.9,
+          "yaw": -130.3,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        },
+        {
+          "pitch": -23.2,
+          "yaw": -157.8,
+          "type": "scene",
+          "text": "Go to Lower Left 2",
+          "sceneId": "990"
+        },
+        {
+          "pitch": -13.1,
+          "yaw": -173.2,
+          "type": "scene",
+          "text": "Go to Left Lower",
+          "sceneId": "569"
+        },
+        {
+          "pitch": -18.3,
+          "yaw": 143.1,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -9.9,
+          "yaw": -62,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 1",
+          "sceneId": "2001"
+        }
+      ]
+    },
+    "2004": {
+      "title": "Upper Left Corridor 4",
+      "panorama": "images/floor2/2_004.jpg",
+      "map": {
+        "x": 198,
+        "y": 121
+      },
+      "hotSpots": [
+        {
+          "pitch": -13.7,
+          "yaw": 154.9,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor Door",
+          "sceneId": "2006"
+        },
+        {
+          "pitch": -27,
+          "yaw": -156,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -16.2,
+          "yaw": -61.9,
+          "type": "scene",
+          "text": "Go to Left Outside Area",
+          "sceneId": "225"
+        },
+        {
+          "pitch": -10.8,
+          "yaw": -23.1,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 3",
+          "sceneId": "2003"
+        },
+        {
+          "pitch": -3.5,
+          "yaw": -23.1,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 1",
+          "sceneId": "2001"
+        },
+        {
+          "pitch": -12.9,
+          "yaw": 61.9,
+          "type": "scene",
+          "text": "Go to Upper Left Classroom 2",
+          "sceneId": "2004R"
+        }
+      ]
+    },
+    "2006": {
+      "title": "Upper Left Corridor Door",
+      "panorama": "images/floor2/2_006.jpg",
+      "map": {
+        "x": 240,
+        "y": 122
+      },
+      "hotSpots": [
+        {
+          "pitch": -30.7,
+          "yaw": -28.9,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor Door (In)",
+          "sceneId": "2007"
+        },
+        {
+          "pitch": -30.8,
+          "yaw": 77.5,
+          "type": "scene",
+          "text": "Go to Left Corridor Door Area",
+          "sceneId": "6"
+        },
+        {
+          "pitch": -21.6,
+          "yaw": 56.8,
+          "type": "scene",
+          "text": "Go to Area Left Corridor Door (Out)",
+          "sceneId": "7"
+        },
+        {
+          "pitch": -18.8,
+          "yaw": 82,
+          "type": "scene",
+          "text": "Go to Lower Left",
+          "sceneId": "290"
+        },
+        {
+          "pitch": -13.3,
+          "yaw": 152.3,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 4",
+          "sceneId": "2004"
+        },
+        {
+          "pitch": -8,
+          "yaw": 152.6,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 3",
+          "sceneId": "2003"
+        }
+      ]
+    },
+    "2007": {
+      "title": "Upper Left Corridor Door (In)",
+      "panorama": "images/floor2/2_007.jpg",
+      "map": {
+        "x": 258,
+        "y": 122
+      },
+      "hotSpots": [
+        {
+          "pitch": -36,
+          "yaw": -82,
+          "type": "scene",
+          "text": "Go to Top Stair",
+          "sceneId": "2008"
+        },
+        {
+          "pitch": -14.3,
+          "yaw": -80.3,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door (In)",
+          "sceneId": "2009"
+        },
+        {
+          "pitch": -34.1,
+          "yaw": -5.8,
+          "type": "scene",
+          "text": "Go to The Stair",
+          "sceneId": "stair"
+        },
+        {
+          "pitch": -22.1,
+          "yaw": -15.9,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -15.5,
+          "yaw": -10.9,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -20.7,
+          "yaw": 13.6,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -24,
+          "yaw": -51.1,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        },
+        {
+          "pitch": -9,
+          "yaw": -42.6,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor (Hall)",
+          "sceneId": "2009C"
+        },
+        {
+          "pitch": -29.7,
+          "yaw": 97.6,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor Door",
+          "sceneId": "2006"
+        }
+      ]
+    },
+    "2008": {
+      "title": "Top Stair",
+      "panorama": "images/floor2/2_008.jpg",
+      "map": {
+        "x": 257,
+        "y": 138
+      },
+      "hotSpots": [
+        {
+          "pitch": -17.5,
+          "yaw": 14,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door (In)",
+          "sceneId": "2009"
+        },
+        {
+          "pitch": -11.1,
+          "yaw": 68.1,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor (Hall)",
+          "sceneId": "2009C"
+        },
+        {
+          "pitch": -27,
+          "yaw": 95.7,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -39.6,
+          "yaw": 119.3,
+          "type": "scene",
+          "text": "Go to The Stair",
+          "sceneId": "stair"
+        },
+        {
+          "pitch": -32.9,
+          "yaw": -158.5,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor Door (In)",
+          "sceneId": "2007"
+        },
+        {
+          "pitch": -19.2,
+          "yaw": 75.5,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -23.8,
+          "yaw": 124,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -20.5,
+          "yaw": 98.7,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -32.7,
+          "yaw": 45.3,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        }
+      ]
+    },
+    "2009": {
+      "title": "Upper Right Corridor Door (In)",
+      "panorama": "images/floor2/2_009.jpg",
+      "map": {
+        "x": 329,
+        "y": 142
+      },
+      "hotSpots": [
+        {
+          "pitch": -36.9,
+          "yaw": 60.7,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "2010"
+        },
+        {
+          "pitch": -20.9,
+          "yaw": 161.8,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor (Hall)",
+          "sceneId": "2009C"
+        },
+        {
+          "pitch": -12,
+          "yaw": 161.7,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door 2 (Hall)",
+          "sceneId": "2009C2"
+        },
+        {
+          "pitch": -24.1,
+          "yaw": -137.7,
+          "type": "scene",
+          "text": "Go to The Stair",
+          "sceneId": "stair"
+        },
+        {
+          "pitch": -20.2,
+          "yaw": -105.8,
+          "type": "scene",
+          "text": "Go to Top Stair",
+          "sceneId": "2008"
+        },
+        {
+          "pitch": -27,
+          "yaw": -165.8,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        }
+      ]
+    },
+    "2010": {
+      "title": "Right Corridor Door",
+      "panorama": "images/floor2/2_010.jpg",
+      "map": {
+        "x": 354,
+        "y": 123
+      },
+      "hotSpots": [
+        {
+          "pitch": -30.5,
+          "yaw": 9.2,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -19.8,
+          "yaw": 27.9,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -19.6,
+          "yaw": 11.5,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door (Out)",
+          "sceneId": "513"
+        },
+        {
+          "pitch": -15.7,
+          "yaw": -72.9,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 1",
+          "sceneId": "2011"
+        },
+        {
+          "pitch": -6.9,
+          "yaw": -71.2,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 2",
+          "sceneId": "2012"
+        },
+        {
+          "pitch": -14,
+          "yaw": -48.8,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -25,
+          "yaw": 111.1,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door (In)",
+          "sceneId": "2009"
+        }
+      ]
+    },
+    "2011": {
+      "title": "Upper Right Corridor 1",
+      "panorama": "images/floor2/2_011.jpg",
+      "map": {
+        "x": 400,
+        "y": 118
+      },
+      "hotSpots": [
+        {
+          "pitch": -3.7,
+          "yaw": 64.9,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 4",
+          "sceneId": "2014"
+        },
+        {
+          "pitch": -15.7,
+          "yaw": 60.5,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 2",
+          "sceneId": "2012"
+        },
+        {
+          "pitch": -31.9,
+          "yaw": -164.8,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -23.2,
+          "yaw": 94.1,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -8.7,
+          "yaw": 63.6,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 3",
+          "sceneId": "2013"
+        },
+        {
+          "pitch": -18,
+          "yaw": -112,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "2010"
+        }
+      ]
+    },
+    "2012": {
+      "title": "Upper Right Corridor 2",
+      "panorama": "images/floor2/2_012.jpg",
+      "map": {
+        "x": 443,
+        "y": 112
+      },
+      "hotSpots": [
+        {
+          "pitch": -19.2,
+          "yaw": 93.6,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 3",
+          "sceneId": "2013"
+        },
+        {
+          "pitch": -21.7,
+          "yaw": -114.1,
+          "type": "scene",
+          "text": "Go to Area Right Corridor Door",
+          "sceneId": "237"
+        },
+        {
+          "pitch": -36.2,
+          "yaw": 151.1,
+          "type": "scene",
+          "text": "Go to Bridge to The Canteen",
+          "sceneId": "797"
+        },
+        {
+          "pitch": -13.3,
+          "yaw": -81.2,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 1",
+          "sceneId": "2011"
+        },
+        {
+          "pitch": -7,
+          "yaw": 95.3,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 4",
+          "sceneId": "2014"
+        },
+        {
+          "pitch": -6.9,
+          "yaw": -82.1,
+          "type": "scene",
+          "text": "Go to Right Corridor Door",
+          "sceneId": "2010"
+        }
+      ]
+    },
+    "2013": {
+      "title": "Upper Right Corridor 3",
+      "panorama": "images/floor2/2_013.jpg",
+      "map": {
+        "x": 475,
+        "y": 110
+      },
+      "hotSpots": [
+        {
+          "pitch": -10.2,
+          "yaw": 77.3,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 4",
+          "sceneId": "2014"
+        },
+        {
+          "pitch": -15.2,
+          "yaw": -136.5,
+          "type": "scene",
+          "text": "FLY!",
+          "sceneId": "513"
+        },
+        {
+          "pitch": -16,
+          "yaw": -100.5,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 2",
+          "sceneId": "2012"
+        }
+      ]
+    },
+    "2014": {
+      "title": "Upper Right Corridor 4",
+      "panorama": "images/floor2/2_014.jpg",
+      "map": {
+        "x": 513,
+        "y": 111
+      },
+      "hotSpots": [
+        {
+          "pitch": -39,
+          "yaw": 67.2,
+          "type": "scene",
+          "text": "JUMPING!",
+          "sceneId": "804"
+        },
+        {
+          "pitch": -32.2,
+          "yaw": -171.3,
+          "type": "scene",
+          "text": "Go to Right of the Bridge",
+          "sceneId": "635"
+        },
+        {
+          "pitch": -9.7,
+          "yaw": -101,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 3",
+          "sceneId": "2013"
+        },
+        {
+          "pitch": -17.3,
+          "yaw": -36.6,
+          "type": "scene",
+          "text": "Go to Upper Right Classroom 1",
+          "sceneId": "2014R1"
+        }
+      ]
+    },
     "041": {
       "title": "Right Outside 2",
       "panorama": "images/floor1/IMG_25681007_113824_041.jpg",
@@ -1608,6 +2311,286 @@
           "type": "scene",
           "text": "Go to Right Outside",
           "sceneId": "804"
+        }
+      ]
+    },
+    "stair": {
+      "title": "The Stair",
+      "panorama": "images/floor2/stair.jpg",
+      "map": {
+        "x": 258,
+        "y": 188
+      },
+      "hotSpots": [
+        {
+          "pitch": -26.9,
+          "yaw": -33.9,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -17.8,
+          "yaw": -18.7,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -15,
+          "yaw": -39.1,
+          "type": "scene",
+          "text": "Go to Right Bottom Door",
+          "sceneId": "10"
+        },
+        {
+          "pitch": -20.2,
+          "yaw": 24.4,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -11.2,
+          "yaw": -157,
+          "type": "scene",
+          "text": "Go to Top Stair",
+          "sceneId": "2008"
+        },
+        {
+          "pitch": -4.7,
+          "yaw": -115,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door (In)",
+          "sceneId": "2009"
+        },
+        {
+          "pitch": -9.3,
+          "yaw": 154.4,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor Door (In)",
+          "sceneId": "2007"
+        },
+        {
+          "pitch": -41,
+          "yaw": 162.3,
+          "type": "scene",
+          "text": "Go to Stair 1",
+          "sceneId": "460"
+        },
+        {
+          "pitch": -24.1,
+          "yaw": -91.9,
+          "type": "scene",
+          "text": "Go to Hall Upper Right",
+          "sceneId": "763"
+        },
+        {
+          "pitch": -1.9,
+          "yaw": -62.4,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor (Hall)",
+          "sceneId": "2009C"
+        },
+        {
+          "pitch": -0.9,
+          "yaw": -34.1,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door 2 (Hall)",
+          "sceneId": "2009C2"
+        }
+      ]
+    },
+    "2003R": {
+      "title": "Upper Left Classroom 1",
+      "panorama": "images/floor2/2_003_room.jpg",
+      "map": {
+        "x": 154,
+        "y": 88
+      },
+      "hotSpots": [
+        {
+          "pitch": -21.6,
+          "yaw": -108.5,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 3",
+          "sceneId": "2003"
+        }
+      ]
+    },
+    "2004R": {
+      "title": "Upper Left Classroom 2",
+      "panorama": "images/floor2/2_004_room.jpg",
+      "map": {
+        "x": 195,
+        "y": 87
+      },
+      "hotSpots": [
+        {
+          "pitch": -16.5,
+          "yaw": -15.5,
+          "type": "scene",
+          "text": "Go to Upper Left Corridor 4",
+          "sceneId": "2004"
+        }
+      ]
+    },
+    "2009C": {
+      "title": "Upper Right Corridor (Hall)",
+      "panorama": "images/floor2/2_009_1.jpg",
+      "map": {
+        "x": 325,
+        "y": 203
+      },
+      "hotSpots": [
+        {
+          "pitch": -21.4,
+          "yaw": -117.1,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door (In)",
+          "sceneId": "2009"
+        },
+        {
+          "pitch": -28.5,
+          "yaw": 164.5,
+          "type": "scene",
+          "text": "Go to The Stair",
+          "sceneId": "stair"
+        },
+        {
+          "pitch": -25.6,
+          "yaw": 120.6,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -35.1,
+          "yaw": 111.3,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -16.4,
+          "yaw": 62.1,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door 2 (Hall)",
+          "sceneId": "2009C2"
+        },
+        {
+          "pitch": -26.7,
+          "yaw": 97.3,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -15.6,
+          "yaw": -167.3,
+          "type": "scene",
+          "text": "Go to Top Stair",
+          "sceneId": "2008"
+        }
+      ]
+    },
+    "2009C2": {
+      "title": "Upper Right Corridor Door 2 (Hall)",
+      "panorama": "images/floor2/2_009_2.jpg",
+      "map": {
+        "x": 328,
+        "y": 255
+      },
+      "hotSpots": [
+        {
+          "pitch": -40.5,
+          "yaw": 84,
+          "type": "scene",
+          "text": "Go to Hall of Fame",
+          "sceneId": "11"
+        },
+        {
+          "pitch": -43.2,
+          "yaw": 117.8,
+          "type": "scene",
+          "text": "Go to Hall",
+          "sceneId": "9"
+        },
+        {
+          "pitch": -27.4,
+          "yaw": 108.6,
+          "type": "scene",
+          "text": "Go to Left Bottom Corridor Door",
+          "sceneId": "8"
+        },
+        {
+          "pitch": -20,
+          "yaw": 152.7,
+          "type": "scene",
+          "text": "Go to The Stair",
+          "sceneId": "stair"
+        },
+        {
+          "pitch": -22.3,
+          "yaw": -163.6,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor (Hall)",
+          "sceneId": "2009C"
+        },
+        {
+          "pitch": -11.4,
+          "yaw": -164.1,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor Door (In)",
+          "sceneId": "2009"
+        },
+        {
+          "pitch": -10.3,
+          "yaw": 166.9,
+          "type": "scene",
+          "text": "Go to Top Stair",
+          "sceneId": "2008"
+        }
+      ]
+    },
+    "2014R1": {
+      "title": "Upper Right Classroom 1",
+      "panorama": "images/floor2/2_014_room1.jpg",
+      "map": {
+        "x": 509,
+        "y": 72
+      },
+      "hotSpots": [
+        {
+          "pitch": -10.3,
+          "yaw": -30.3,
+          "type": "scene",
+          "text": "Go to Upper Right Classroom 2",
+          "sceneId": "2014R2"
+        },
+        {
+          "pitch": -16.8,
+          "yaw": -121.6,
+          "type": "scene",
+          "text": "Go to Upper Right Corridor 4",
+          "sceneId": "2014"
+        }
+      ]
+    },
+    "2014R2": {
+      "title": "Upper Right Classroom 2",
+      "panorama": "images/floor2/2_014_room2.jpg",
+      "map": {
+        "x": 467,
+        "y": 70
+      },
+      "hotSpots": [
+        {
+          "pitch": -12,
+          "yaw": -82.7,
+          "type": "scene",
+          "text": "Go to Upper Right Classroom 1",
+          "sceneId": "2014R1"
         }
       ]
     }
