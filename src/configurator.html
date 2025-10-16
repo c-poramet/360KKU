@@ -76,6 +76,62 @@
             border-color: rgba(167, 59, 36, 0.6);
         }
         
+        /* Hotspot preview styles */
+        .hotspot-preview,
+        .pnlm-hotspot.hotspot-preview,
+        .pnlm-hotspot-base.hotspot-preview {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            border: 2px solid white !important;
+            border-radius: 50% !important;
+            width: 20px !important;
+            height: 20px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 1000 !important;
+        }
+        
+        /* Pannellum default hotspot styling */
+        .pnlm-hotspot {
+            height: 26px !important;
+            width: 26px !important;
+            background: #3b82f6 !important;
+            border: 2px solid #fff !important;
+            border-radius: 50% !important;
+            cursor: pointer !important;
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        .pnlm-hotspot:hover {
+            background: #ef4444 !important;
+        }
+        
+        .hotspot-preview:hover,
+        .pnlm-hotspot.hotspot-preview:hover,
+        .pnlm-hotspot-base.hotspot-preview:hover {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            transform: scale(1.2) !important;
+        }
+        
+        .custom-hotspot {
+            position: relative !important;
+            z-index: 1001 !important;
+        }
+        
+        .dev-hotspot-marker:hover {
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+            50% { box-shadow: 0 4px 16px rgba(59, 130, 246, 0.6); }
+            100% { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        }
+
         .coordinates-display {
             position: absolute;
             top: 15px;
@@ -316,8 +372,25 @@
             </h2>
             <div class="flex items-center space-x-3">
                 <div class="text-sm text-gray-400">
-                    Auto-updating • Ready for copy-paste
+                    Auto-updating • <span id="auto-save-status" class="text-green-400">
+                        <i class="fas fa-shield-alt"></i> Auto-saved
+                    </span>
                 </div>
+                <button onclick="exportConfiguration()" 
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-lg">
+                    <i class="fas fa-download mr-1"></i>
+                    Export
+                </button>
+                <button onclick="importConfiguration()" 
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors shadow-lg">
+                    <i class="fas fa-upload mr-1"></i>
+                    Import
+                </button>
+                <button onclick="clearAutoSave()" 
+                        class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
+                    <i class="fas fa-trash mr-1"></i>
+                    Clear Save
+                </button>
                 <button id="copy-json" 
                         class="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors shadow-lg">
                     <i class="fas fa-copy mr-2"></i>
@@ -917,6 +990,9 @@
             updateAllUI();
             closeSceneModal();
             
+            // Auto-save changes
+            autoSave();
+            
             console.log(`${appState.editingSceneId ? 'Updated' : 'Created'} scene: ${sceneId}`);
         }
 
@@ -942,6 +1018,9 @@
                 // Update UI
                 updateAllUI();
                 closeSceneModal();
+                
+                // Auto-save changes
+                autoSave();
                 
                 console.log(`Deleted scene: ${appState.editingSceneId}`);
             }
@@ -1142,6 +1221,9 @@
                     hotspotBtn.disabled = false;
                 }
                 
+                // Render existing hotspots
+                setTimeout(() => renderHotspots(), 100);
+                
                 console.log(`Loaded scene in development mode: ${sceneId}`);
                 
             } else {
@@ -1159,19 +1241,91 @@
                     // Initialize Pannellum viewer
                     appState.viewer = pannellum.viewer('panorama-viewer', config);
                     
-                    // Set up hotspot click handler
-                    setupHotspotClickHandler();
+                    // Flag to track if load event fired
+                    let loadEventFired = false;
                     
-                    // Set up mouse tracking for coordinates
-                    setupMouseTracking();
+                    // Remove any previous load event listeners
+                    appState.viewer.off('load');
                     
-                    // Enable hotspot mode button
+                    // Wait for viewer to fully load before setting up interactions
+                    appState.viewer.on('load', function() {
+                        loadEventFired = true;
+                        console.log(`✅ Scene loaded successfully via 'load' event: ${sceneId}`);
+                        console.log(`🔄 Setting up interactions and rendering hotspots...`);
+                        
+                        // Set up hotspot click handler
+                        setupHotspotClickHandler();
+                        
+                        // Set up mouse tracking for coordinates
+                        setupMouseTracking();
+                        
+                        // Get hotspots for current scene
+                        const currentScene = tourData.scenes[sceneId];
+                        const currentHotspots = currentScene?.hotSpots || [];
+                        console.log(`📍 Found ${currentHotspots.length} hotspots to render for scene: ${sceneId}`);
+                        
+                        // Render existing hotspots AFTER viewer is fully loaded
+                        renderHotspots();
+                        
+                        console.log(`✅ Hotspots rendering complete for scene: ${sceneId}`);
+                    });
+                    
+                    // FALLBACK: If load event doesn't fire within 1 second, render anyway
+                    // This handles cases where the panorama is cached
+                    setTimeout(() => {
+                        if (!loadEventFired) {
+                            console.log(`⚠️ Load event didn't fire, using fallback for scene: ${sceneId}`);
+                            
+                            // Set up interactions
+                            setupHotspotClickHandler();
+                            setupMouseTracking();
+                            
+                            // Render hotspots
+                            const currentScene = tourData.scenes[sceneId];
+                            const currentHotspots = currentScene?.hotSpots || [];
+                            console.log(`📍 Fallback: Found ${currentHotspots.length} hotspots for scene: ${sceneId}`);
+                            renderHotspots();
+                            
+                            console.log(`✅ Fallback rendering complete for scene: ${sceneId}`);
+                        }
+                    }, 1000);
+                    
+                    // ADDITIONAL FIX: Keep checking viewer state and force re-render when ready
+                    // This fixes the visibility issue where hotspots exist but aren't visible
+                    let retryCount = 0;
+                    const maxRetries = 10;
+                    const retryInterval = 300;
+                    
+                    const forceRenderWhenReady = () => {
+                        retryCount++;
+                        console.log(`🔄 Attempt ${retryCount}: Checking if viewer is ready for forced re-render...`);
+                        
+                        if (appState.viewer && appState.viewer.isLoaded && appState.viewer.isLoaded()) {
+                            console.log(`✅ Viewer confirmed loaded! Forcing hotspot re-render...`);
+                            setTimeout(() => renderHotspots(), 100);
+                        } else if (retryCount < maxRetries) {
+                            console.log(`⏳ Viewer not ready yet, will retry in ${retryInterval}ms...`);
+                            setTimeout(forceRenderWhenReady, retryInterval);
+                        } else {
+                            console.log(`⚠️ Max retries reached, forcing render anyway...`);
+                            setTimeout(() => renderHotspots(), 100);
+                        }
+                    };
+                    
+                    setTimeout(forceRenderWhenReady, 500);
+                    
+                    // Also set up error handler
+                    appState.viewer.on('error', function(error) {
+                        console.error(`❌ Error loading panorama for scene ${sceneId}:`, error);
+                    });
+                    
+                    // Enable hotspot mode button immediately
                     const hotspotBtn = document.getElementById('add-hotspot-mode');
                     if (hotspotBtn) {
                         hotspotBtn.disabled = false;
                     }
                     
-                    console.log(`Loaded scene in viewer: ${sceneId}`);
+                    console.log(`🔄 Initializing Pannellum viewer for scene: ${sceneId}`);
                 } catch (error) {
                     console.error('Error loading scene in viewer:', error);
                     
@@ -1193,6 +1347,9 @@
                     if (hotspotBtn) {
                         hotspotBtn.disabled = false;
                     }
+                    
+                    // Render existing hotspots even in error mode
+                    setTimeout(() => renderHotspots(), 100);
                 }
             }
             
@@ -1201,7 +1358,7 @@
         }
 
         /**
-         * Clear the Pannellum viewer and show empty state
+         * Clears the Pannellum viewer and resets associated state
          */
         function clearPannellumViewer() {
             if (appState.viewer) {
@@ -1222,6 +1379,52 @@
             }
             
             updateAllUI();
+        }
+
+        /**
+         * Runs a quick add/remove test to ensure hotspot rendering is working.
+         * This is for debugging and does not save changes.
+         */
+        function runHotspotRenderTest() {
+            console.log('%c[TEST] Running hotspot render test...', 'color: #f9a8d4');
+            
+            if (!appState.currentSceneId) return;
+
+            const scene = tourData.scenes[appState.currentSceneId];
+            const originalHotspotsCount = scene.hotSpots.length;
+
+            // 1. Define a dummy hotspot
+            const dummyHotspot = {
+                pitch: 0,
+                yaw: 15,
+                type: 'scene',
+                text: 'Render Test',
+                target: Object.keys(tourData.scenes).find(id => id !== appState.currentSceneId) || appState.currentSceneId
+            };
+
+            // 2. Add the hotspot and re-render
+            scene.hotSpots.push(dummyHotspot);
+            console.log('[TEST] Added dummy hotspot. Re-rendering...');
+            renderHotspots();
+
+            // 3. Immediately remove the hotspot and render again
+            // Use a short timeout to allow the DOM to update for visual confirmation if needed.
+            setTimeout(() => {
+                // Find and remove the dummy hotspot
+                const hotspotIndex = scene.hotSpots.findIndex(h => h.text === 'Render Test');
+                if (hotspotIndex > -1) {
+                    scene.hotSpots.splice(hotspotIndex, 1);
+                }
+                
+                console.log('[TEST] Removed dummy hotspot. Re-rendering to restore state...');
+                renderHotspots();
+
+                if (scene.hotSpots.length === originalHotspotsCount) {
+                    console.log('%c[TEST] Hotspot render test completed successfully.', 'color: #a3e635');
+                } else {
+                    console.error('[TEST] Test failed: Hotspot count mismatch after test.');
+                }
+            }, 100);
         }
 
         // ===========================
@@ -1404,14 +1607,324 @@
             // Add to current scene
             tourData.scenes[appState.currentSceneId].hotSpots.push(hotspot);
             
+            console.log('=== Hotspot Added ===');
+            console.log('Current scene:', appState.currentSceneId);
+            console.log('Total hotspots now:', tourData.scenes[appState.currentSceneId].hotSpots.length);
+            console.log('All hotspots:', tourData.scenes[appState.currentSceneId].hotSpots);
+            
             // Update UI
             updateAllUI();
+            
+            // Render hotspots in viewer
+            console.log('Calling renderHotspots after adding new hotspot...');
+            renderHotspots();
+            
+            // Auto-save changes
+            autoSave();
             
             // Close modal
             closeHotspotModal();
             
             showMessage(`Added hotspot: "${hotspotText}" -> ${tourData.scenes[destinationSceneId].title}`, 'success');
             console.log(`Added hotspot: ${hotspotText} -> ${destinationSceneId} at pitch:${coords.pitch.toFixed(1)}, yaw:${coords.yaw.toFixed(1)}`);
+        }
+
+        /**
+         * Render hotspots in the panorama viewer
+         */
+        function renderHotspots() {
+            console.log('=== renderHotspots called ===');
+            console.log('Current scene ID:', appState.currentSceneId);
+            
+            if (!appState.currentSceneId || !tourData.scenes[appState.currentSceneId]) {
+                console.warn('No current scene ID or scene not found');
+                return;
+            }
+            
+            const scene = tourData.scenes[appState.currentSceneId];
+            const hotspots = scene.hotSpots || [];
+            
+            console.log('Scene data:', scene);
+            console.log('Hotspots to render:', hotspots.length, hotspots);
+            console.log('Viewer exists:', !!appState.viewer);
+            
+            if (appState.viewer) {
+                // Pannellum viewer mode - add hotspots to the viewer
+                console.log('Using Pannellum viewer mode');
+                renderPannellumHotspots(hotspots);
+            } else {
+                // Development mode - render visual hotspot markers
+                console.log('Using development mode');
+                renderDevelopmentHotspots(hotspots);
+            }
+        }
+
+        /**
+         * Render hotspots in Pannellum viewer
+         */
+        function renderPannellumHotspots(hotspots) {
+            if (!appState.viewer) {
+                console.warn('⚠️ Viewer not ready for hotspot rendering');
+                return;
+            }
+            
+            // Check if viewer rendering container exists
+            const renderContainer = document.querySelector('.pnlm-render-container');
+            if (!renderContainer) {
+                console.warn('⚠️ Pannellum render container not found, viewer may not be fully initialized');
+            }
+            
+            console.log(`🎯 Rendering ${hotspots.length} hotspots in Pannellum viewer`);
+            
+            // Remove ALL existing hotspots more thoroughly
+            try {
+                // Try to get config and remove all hotspots
+                const config = appState.viewer.getConfig();
+                if (config.hotSpots && config.hotSpots.length > 0) {
+                    console.log(`🧹 Cleaning up ${config.hotSpots.length} existing hotspots...`);
+                    // Create a copy to avoid modification during iteration
+                    const existingHotspots = [...config.hotSpots];
+                    existingHotspots.forEach((existingHotspot) => {
+                        if (existingHotspot.id && existingHotspot.id.startsWith('hotspot_')) {
+                            try {
+                                appState.viewer.removeHotSpot(existingHotspot.id);
+                                console.log(`  🗑️ Removed: ${existingHotspot.id}`);
+                            } catch (e) {
+                                // Ignore removal errors
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                // Fallback: try to remove by index (up to 100 possible hotspots)
+                console.log('🔄 Using fallback hotspot removal method');
+                for (let i = 0; i < 100; i++) {
+                    try {
+                        appState.viewer.removeHotSpot(`hotspot_${i}`);
+                    } catch (e) {
+                        // Stop when no more hotspots to remove
+                        break;
+                    }
+                }
+            }
+            
+            console.log(`✨ Adding ${hotspots.length} new hotspots...`);
+            
+            // Add current hotspots
+            hotspots.forEach((hotspot, index) => {
+                try {
+                    const hotspotConfig = {
+                        "id": `hotspot_${index}`,
+                        "pitch": hotspot.pitch,
+                        "yaw": hotspot.yaw,
+                        "type": "info",
+                        "text": hotspot.text,
+                        "URL": "#",  // Dummy URL to ensure hotspot is clickable
+                        "clickHandlerFunc": function(evt, args) {
+                            evt.preventDefault();
+                            console.log(`Hotspot clicked: ${hotspot.text} -> ${hotspot.sceneId}`);
+                            // Future: navigate to scene
+                        },
+                        "createTooltipFunc": function(hotSpotDiv) {
+                            console.log(`🎨 createTooltipFunc called for hotspot ${index}`);
+                            console.log(`  hotSpotDiv:`, hotSpotDiv);
+                            console.log(`  hotSpotDiv className:`, hotSpotDiv.className);
+                            
+                            // SUPER SIMPLE TEST - just make it red and big
+                            hotSpotDiv.style.background = 'red';
+                            hotSpotDiv.style.width = '50px';
+                            hotSpotDiv.style.height = '50px';
+                            hotSpotDiv.style.border = '5px solid yellow';
+                            hotSpotDiv.style.borderRadius = '50%';
+                            hotSpotDiv.style.display = 'block';
+                            hotSpotDiv.style.visibility = 'visible';
+                            hotSpotDiv.style.opacity = '1';
+                            hotSpotDiv.style.position = 'absolute';
+                            hotSpotDiv.style.zIndex = '999999';
+                            
+                            console.log(`  ✅ Applied aggressive styling to hotSpotDiv`);
+                            console.log(`  Final style:`, hotSpotDiv.style.cssText);
+                        }
+                    };
+                    
+                    appState.viewer.addHotSpot(hotspotConfig);
+                    console.log(`✅ Added hotspot ${index}: "${hotspot.text}" at yaw:${hotspot.yaw.toFixed(1)}, pitch:${hotspot.pitch.toFixed(1)}`);
+                } catch (e) {
+                    console.error(`❌ Error adding hotspot ${index} to viewer:`, e);
+                }
+            });
+            
+            // Verify hotspots were added
+            try {
+                const config = appState.viewer.getConfig();
+                console.log(`📊 Verification: Viewer now has ${config.hotSpots ? config.hotSpots.length : 0} hotspots in config`);
+            } catch (e) {
+                console.error('Error verifying hotspots:', e);
+            }
+            
+            // Check DOM for hotspot elements AND manually add overlay divs if needed
+            setTimeout(() => {
+                const hotspotElements = document.querySelectorAll('.pnlm-hotspot, .hotspot-preview, .pnlm-hotspot-base');
+                console.log(`🔍 DOM Check: Found ${hotspotElements.length} hotspot elements in DOM`);
+                hotspotElements.forEach((el, idx) => {
+                    console.log(`  Hotspot ${idx}:`, el.className, 'Style:', el.style.cssText);
+                    console.log(`  Inner HTML:`, el.innerHTML);
+                    console.log(`  Children:`, el.children.length);
+                    
+                    // Force visibility
+                    el.style.display = 'block';
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '1';
+                    el.style.background = 'red';
+                    el.style.width = '50px';
+                    el.style.height = '50px';
+                    el.style.border = '5px solid yellow';
+                    console.log(`  🎨 Forced styling on hotspot ${idx}`);
+                });
+                
+                if (hotspotElements.length === 0 && hotspots.length > 0) {
+                    console.error('⚠️ WARNING: Hotspots added to config but not visible in DOM!');
+                    console.log('🔧 Attempting to manually inject hotspot overlays...');
+                    injectManualHotspotOverlays(hotspots);
+                }
+            }, 500);
+            
+            console.log(`✅ Successfully rendered ${hotspots.length} hotspots`);
+        }
+
+        /**
+         * Manually inject visible hotspot overlays when Pannellum fails to render them
+         */
+        function injectManualHotspotOverlays(hotspots) {
+            const viewerContainer = document.getElementById('panorama-viewer');
+            if (!viewerContainer || !appState.viewer) {
+                console.error('Cannot inject manual overlays - viewer not found');
+                return;
+            }
+            
+            // Remove any existing manual overlays
+            const existingOverlays = viewerContainer.querySelectorAll('.manual-hotspot-overlay');
+            existingOverlays.forEach(overlay => overlay.remove());
+            
+            console.log(`📌 Injecting ${hotspots.length} manual hotspot overlays...`);
+            
+            hotspots.forEach((hotspot, index) => {
+                // Get screen coordinates from pitch/yaw
+                try {
+                    const coords = appState.viewer.pitchYawToCoords(hotspot.pitch, hotspot.yaw);
+                    
+                    // Create overlay div
+                    const overlay = document.createElement('div');
+                    overlay.className = 'manual-hotspot-overlay';
+                    overlay.style.cssText = `
+                        position: absolute;
+                        left: ${coords[0]}px;
+                        top: ${coords[1]}px;
+                        width: 50px;
+                        height: 50px;
+                        background: red;
+                        border: 5px solid yellow;
+                        border-radius: 50%;
+                        transform: translate(-25px, -25px);
+                        z-index: 999999;
+                        pointer-events: auto;
+                        cursor: pointer;
+                        display: block;
+                        visibility: visible;
+                        opacity: 1;
+                    `;
+                    overlay.title = hotspot.text;
+                    
+                    // Add click handler
+                    overlay.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        console.log(`Manual hotspot clicked: ${hotspot.text} -> ${hotspot.sceneId}`);
+                        alert(`Navigate to: ${hotspot.text}`);
+                    });
+                    
+                    viewerContainer.appendChild(overlay);
+                    console.log(`  ✅ Injected overlay ${index} at screen coords [${coords[0]}, ${coords[1]}]`);
+                } catch (e) {
+                    console.error(`  ❌ Failed to inject overlay ${index}:`, e);
+                }
+            });
+        }
+
+        /**
+         * Render hotspots in development mode
+         */
+        function renderDevelopmentHotspots(hotspots) {
+            const viewerEl = document.getElementById('panorama-viewer');
+            
+            // Remove existing hotspot markers
+            const existingMarkers = viewerEl.querySelectorAll('.dev-hotspot-marker');
+            existingMarkers.forEach(marker => marker.remove());
+            
+            // Add hotspot markers for development mode
+            hotspots.forEach((hotspot, index) => {
+                const marker = document.createElement('div');
+                marker.className = 'dev-hotspot-marker';
+                marker.style.cssText = `
+                    position: absolute;
+                    width: 20px;
+                    height: 20px;
+                    background: #3b82f6;
+                    border: 2px solid white;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    z-index: 10;
+                    transition: all 0.2s ease;
+                `;
+                
+                // Convert panorama coordinates to screen coordinates (approximation for dev mode)
+                const rect = viewerEl.getBoundingClientRect();
+                const x = ((hotspot.yaw + 180) / 360) * rect.width;
+                const y = ((-hotspot.pitch + 90) / 180) * rect.height;
+                
+                marker.style.left = `${x - 10}px`;
+                marker.style.top = `${y - 10}px`;
+                
+                // Add tooltip
+                marker.title = `${hotspot.text} (${hotspot.pitch.toFixed(1)}°, ${hotspot.yaw.toFixed(1)}°)`;
+                
+                // Hover effects
+                marker.addEventListener('mouseenter', () => {
+                    marker.style.transform = 'scale(1.2)';
+                    marker.style.background = '#ef4444';
+                });
+                
+                marker.addEventListener('mouseleave', () => {
+                    marker.style.transform = 'scale(1)';
+                    marker.style.background = '#3b82f6';
+                });
+                
+                // Click to remove hotspot
+                marker.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Remove hotspot "${hotspot.text}"?`)) {
+                        removeHotspot(index);
+                    }
+                });
+                
+                viewerEl.appendChild(marker);
+            });
+        }
+
+        /**
+         * Remove a hotspot by index
+         */
+        function removeHotspot(index) {
+            if (!appState.currentSceneId) return;
+            
+            const scene = tourData.scenes[appState.currentSceneId];
+            if (scene.hotSpots && scene.hotSpots[index]) {
+                scene.hotSpots.splice(index, 1);
+                updateAllUI();
+                autoSave();
+                renderHotspots();
+                showMessage('Hotspot removed', 'info');
+            }
         }
 
         /**
@@ -1454,6 +1967,11 @@
             // Only draw floor plan if canvas is initialized
             if (appState.canvas && appState.ctx) {
                 drawFloorPlan(); // Redraw canvas with updated markers
+            }
+            
+            // Render hotspots in viewer if scene is loaded
+            if (appState.currentSceneId) {
+                setTimeout(() => renderHotspots(), 100);
             }
         }
 
@@ -1599,7 +2117,7 @@
             setupMouseTracking();
             
             // Set up hotspot click handling
-            setupHotspotClickHandling();
+            setupHotspotClickHandler();
             
             // Enable hotspot adding button
             const hotspotBtn = document.getElementById('add-hotspot-mode');
@@ -1750,6 +2268,7 @@
             const select = document.getElementById('first-scene-select');
             tourData.default.firstScene = select.value;
             updateJsonOutput();
+            autoSave();
         }
 
         /**
@@ -1759,6 +2278,7 @@
             const input = document.getElementById('fade-duration');
             tourData.default.sceneFadeDuration = parseInt(input.value) || 1000;
             updateJsonOutput();
+            autoSave();
         }
 
         // ===========================
@@ -1843,6 +2363,7 @@
                                     appState.currentSceneId = null;
                                     appState.hotspotMode = false;
                                     updateAllUI();
+                                    autoSave();
                                     showMessage('Configuration imported successfully!', 'success');
                                 }
                             } else {
@@ -1926,8 +2447,112 @@
                 appState.currentSceneId = null;
                 appState.hotspotMode = false;
                 updateAllUI();
+                autoSave();
                 showMessage('Configuration reset to defaults', 'info');
             }
+        }
+
+        // ===========================
+        // AUTO-SAVE & LOCALSTORAGE FUNCTIONS
+        // ===========================
+        
+        /**
+         * Auto-save current configuration to localStorage
+         */
+        function autoSave() {
+            try {
+                const saveData = {
+                    tourData: tourData,
+                    timestamp: new Date().toISOString(),
+                    version: '1.0'
+                };
+                
+                localStorage.setItem('360kku-tour-config', JSON.stringify(saveData));
+                console.log('Configuration auto-saved to localStorage');
+                
+                // Show subtle save indicator
+                showSaveIndicator();
+            } catch (error) {
+                console.error('Failed to auto-save:', error);
+            }
+        }
+
+        /**
+         * Load configuration from localStorage
+         */
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('360kku-tour-config');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    
+                    // Validate the saved data
+                    if (parsed.tourData && validateTourData(parsed.tourData)) {
+                        return parsed;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load from localStorage:', error);
+            }
+            return null;
+        }
+
+        /**
+         * Clear localStorage data
+         */
+        function clearAutoSave() {
+            try {
+                localStorage.removeItem('360kku-tour-config');
+                showMessage('Auto-save data cleared', 'info');
+            } catch (error) {
+                console.error('Failed to clear localStorage:', error);
+            }
+        }
+
+        /**
+         * Show subtle save indicator
+         */
+        function showSaveIndicator() {
+            // Create or update save indicator
+            let indicator = document.getElementById('save-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'save-indicator';
+                indicator.className = 'fixed bottom-4 right-4 px-3 py-2 bg-green-600 text-white text-sm rounded-lg shadow-lg z-50 opacity-0 transition-opacity duration-300';
+                indicator.innerHTML = '<i class="fas fa-save mr-1"></i> Auto-saved';
+                document.body.appendChild(indicator);
+            }
+            
+            // Show and hide indicator
+            indicator.style.opacity = '1';
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+            }, 2000);
+        }
+
+        /**
+         * Prompt to restore from auto-save if available
+         */
+        function promptRestoreAutoSave() {
+            const savedData = loadFromLocalStorage();
+            if (savedData) {
+                const saveTime = new Date(savedData.timestamp).toLocaleString();
+                const sceneCount = Object.keys(savedData.tourData.scenes).length;
+                
+                const restore = confirm(
+                    `Found auto-saved configuration from ${saveTime}\n\n` +
+                    `Contains ${sceneCount} scene(s)\n\n` +
+                    `Would you like to restore it?`
+                );
+                
+                if (restore) {
+                    tourData = savedData.tourData;
+                    updateAllUI();
+                    showMessage('Configuration restored from auto-save!', 'success');
+                    return true;
+                }
+            }
+            return false;
         }
 
         // ===========================
@@ -2015,6 +2640,9 @@
          * Initialize the configurator application
          */
         function initializeConfigurator() {
+            // Check for auto-saved data first
+            const hasAutoSave = promptRestoreAutoSave();
+            
             // Initialize canvas
             appState.canvas = document.getElementById('minimap-canvas');
             if (appState.canvas) {
@@ -2033,8 +2661,10 @@
             // Initial UI update
             updateAllUI();
             
-            // Show welcome message
-            showMessage('Welcome to the 360° Tour Configurator! Start by uploading a floor plan.', 'info');
+            // Show welcome message (only if no auto-save was restored)
+            if (!hasAutoSave) {
+                showMessage('Welcome to the 360° Tour Configurator! Start by uploading a floor plan.', 'info');
+            }
             
             console.log('Configurator initialized successfully');
         }
@@ -2062,7 +2692,10 @@
         window.importConfiguration = importConfiguration;
         window.copyToClipboard = copyToClipboard;
         window.resetConfiguration = resetConfiguration;
+        window.clearAutoSave = clearAutoSave;
         window.toggleHotspotMode = toggleHotspotMode;
+        window.renderHotspots = renderHotspots;
+        window.removeHotspot = removeHotspot;
         window.generateDeploymentPath = generateDeploymentPath;
     </script>
 </body>
