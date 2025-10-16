@@ -23,6 +23,52 @@
             background-color: #000;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
+        
+        /* Debug toggle button */
+        #debug-toggle {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            border: 1px solid white;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none; /* Hide by default, show with 'D' key */
+        }
+        
+        /* Debug panel for adjusting marker positions */
+        #debug-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            border: 1px solid white;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 12px;
+            width: 280px;
+            z-index: 1001;
+            display: none;
+        }
+        
+        #debug-panel h3 {
+            margin-top: 0;
+        }
+        
+        #debug-panel label {
+            display: inline-block;
+            width: 80px;
+        }
+        
+        #debug-panel input {
+            width: 60px;
+            margin: 2px;
+        }
         #panorama {
             width: 100%;
             height: 100%;
@@ -121,6 +167,15 @@
     <div id="floorplan-container">
         <div id="minimap"></div>
     </div>
+    
+    <!-- Debug UI (hidden by default) -->
+    <button id="debug-toggle">Debug Mode</button>
+    <div id="debug-panel">
+        <h3>Marker Position Adjustment</h3>
+        <div id="marker-controls"></div>
+        <button id="save-positions">Save Positions</button>
+        <button id="reset-positions">Reset</button>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -186,6 +241,166 @@
                     doubleClickZoom: false, // Disable double click zoom
                     dragging: false // Disable dragging to keep the minimap fixed
                 });
+                
+                // Debug mode variables
+                let debugMode = false;
+                const debugToggle = document.getElementById('debug-toggle');
+                const debugPanel = document.getElementById('debug-panel');
+                const markerControls = document.getElementById('marker-controls');
+                
+                // Store custom position overrides
+                window.markerPositionOverrides = {};
+                
+                // Add debug functionality - press 'd' key to toggle debug mode
+                document.addEventListener('keydown', function(e) {
+                    // Press 'd' to toggle debug mode
+                    if (e.key.toLowerCase() === 'd') {
+                        debugMode = !debugMode;
+                        debugToggle.style.display = debugMode ? 'block' : 'none';
+                        
+                        // Show debug info in console
+                        console.log('---- FLOORPLAN DEBUG INFO ----');
+                        console.log('Current floor:', currentFloor);
+                        console.log('Image info:', window.floorplanInfo);
+                        if (map) {
+                            console.log('Map bounds:', map.getBounds());
+                        }
+                        console.log('Configured marker positions:');
+                        Object.keys(tourConfig.scenes).forEach(sceneId => {
+                            const scene = tourConfig.scenes[sceneId];
+                            if (scene.map && scene.map.x && scene.map.y) {
+                                console.log(`${sceneId}: (${scene.map.x}, ${scene.map.y})`);
+                            }
+                        });
+                    }
+                });
+                
+                // Toggle debug panel on button click
+                debugToggle.addEventListener('click', function() {
+                    const isVisible = debugPanel.style.display === 'block';
+                    debugPanel.style.display = isVisible ? 'none' : 'block';
+                    
+                    if (!isVisible) {
+                        // Create marker adjustment controls when panel is opened
+                        createMarkerAdjustmentControls();
+                    }
+                });
+                
+                // Create controls for adjusting marker positions
+                function createMarkerAdjustmentControls() {
+                    markerControls.innerHTML = '';
+                    
+                    Object.keys(tourConfig.scenes).forEach(sceneId => {
+                        const scene = tourConfig.scenes[sceneId];
+                        if (scene.map && scene.map.x && scene.map.y && scene.panorama.includes(`/${currentFloor}/`)) {
+                            const div = document.createElement('div');
+                            div.innerHTML = `
+                                <p><strong>${sceneId}</strong></p>
+                                <div>
+                                    <label>X:</label>
+                                    <input type="number" step="0.01" id="${sceneId}-x" value="${scene.map.x}">
+                                    <label>Y:</label>
+                                    <input type="number" step="0.01" id="${sceneId}-y" value="${scene.map.y}">
+                                    <button id="${sceneId}-update">Update</button>
+                                </div>
+                            `;
+                            markerControls.appendChild(div);
+                            
+                            // Add event listener for update button
+                            document.getElementById(`${sceneId}-update`).addEventListener('click', function() {
+                                const newX = parseFloat(document.getElementById(`${sceneId}-x`).value);
+                                const newY = parseFloat(document.getElementById(`${sceneId}-y`).value);
+                                
+                                // Store override
+                                window.markerPositionOverrides[sceneId] = { x: newX, y: newY };
+                                
+                                // Update marker position
+                                updateMarkerPosition(sceneId, newX, newY);
+                                
+                                console.log(`Updated ${sceneId} position to (${newX}, ${newY})`);
+                            });
+                        }
+                    });
+                    
+                    // Add event listener for save button
+                    document.getElementById('save-positions').addEventListener('click', function() {
+                        // Create a copy of the tour config with updated positions
+                        const updatedConfig = JSON.parse(JSON.stringify(tourConfig));
+                        
+                        // Apply overrides
+                        Object.keys(window.markerPositionOverrides).forEach(sceneId => {
+                            if (updatedConfig.scenes[sceneId]) {
+                                updatedConfig.scenes[sceneId].map.x = window.markerPositionOverrides[sceneId].x;
+                                updatedConfig.scenes[sceneId].map.y = window.markerPositionOverrides[sceneId].y;
+                            }
+                        });
+                        
+                        // Generate downloadable config
+                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(updatedConfig, null, 2));
+                        const downloadAnchor = document.createElement('a');
+                        downloadAnchor.setAttribute("href", dataStr);
+                        downloadAnchor.setAttribute("download", "updated-tour-config.json");
+                        document.body.appendChild(downloadAnchor);
+                        downloadAnchor.click();
+                        downloadAnchor.remove();
+                    });
+                    
+                    // Add event listener for reset button
+                    document.getElementById('reset-positions').addEventListener('click', function() {
+                        window.markerPositionOverrides = {};
+                        createMarkers(currentFloor);
+                        createMarkerAdjustmentControls(); // Refresh UI
+                    });
+                }
+                
+                // Function to update a marker's position
+                function updateMarkerPosition(sceneId, newX, newY) {
+                    // Remove old marker
+                    if (markers[sceneId]) {
+                        map.removeLayer(markers[sceneId]);
+                    }
+                    
+                    // Calculate new position
+                    const REFERENCE_WIDTH = 440;
+                    const REFERENCE_HEIGHT = 280;
+                    const relX = newX / REFERENCE_WIDTH;
+                    const relY = newY / REFERENCE_HEIGHT;
+                    
+                    // Create new marker
+                    const scene = tourConfig.scenes[sceneId];
+                    const isActive = sceneId === viewer.getScene();
+                    const markerClass = `scene-marker-icon ${sceneId}-marker`;
+                    const icon = L.divIcon({
+                        className: isActive ? `${markerClass} active` : markerClass,
+                        html: '',
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7]
+                    });
+                    
+                    // Calculate Leaflet coordinates
+                    const bounds = map.getBounds();
+                    const mapWidth = bounds.getEast() - bounds.getWest();
+                    const mapHeight = bounds.getNorth() - bounds.getSouth();
+                    
+                    const leafletX = bounds.getWest() + (relX * mapWidth);
+                    const leafletY = bounds.getSouth() + ((1-relY) * mapHeight); // Invert Y
+                    
+                    // Create and add marker
+                    const marker = L.marker([leafletY, leafletX], {
+                        icon: icon,
+                        title: scene.title || sceneId,
+                        riseOnHover: true
+                    }).addTo(map);
+                    
+                    // Add click event
+                    marker.on('click', () => {
+                        console.log(`Marker clicked: ${sceneId}`);
+                        viewer.loadScene(sceneId);
+                    });
+                    
+                    // Store marker reference
+                    markers[sceneId] = marker;
+                }
                 
                 // Add attribution in a more subtle way
                 map.attributionControl = L.control.attribution({
@@ -462,61 +677,63 @@
                     const scene = tourConfig.scenes[sceneId];
                     if (scene.panorama && scene.panorama.includes(`/${floor}/`)) {
                         if (scene.map && scene.map.x && scene.map.y) {
-                            // Get the original SVG coordinates
-                            const svgX = parseFloat(scene.map.x);
-                            const svgY = parseFloat(scene.map.y);
+                            // Check if we have position overrides
+                            let svgX, svgY;
+                            if (window.markerPositionOverrides && window.markerPositionOverrides[sceneId]) {
+                                svgX = parseFloat(window.markerPositionOverrides[sceneId].x);
+                                svgY = parseFloat(window.markerPositionOverrides[sceneId].y);
+                                console.log(`Scene ${sceneId}: Using override coords (${svgX}, ${svgY})`);
+                            } else {
+                                // Get the original SVG coordinates
+                                svgX = parseFloat(scene.map.x);
+                                svgY = parseFloat(scene.map.y);
+                                console.log(`Scene ${sceneId}: Original SVG coords (${svgX}, ${svgY})`);
+                            }
                             
-                            console.log(`Scene ${sceneId}: Original SVG coords (${svgX}, ${svgY})`);
-                            
-                            // Determine if we're using PNG or SVG for positioning calculations
+                            // Get image info from what we loaded
                             const isPNG = window.floorplanInfo && window.floorplanInfo.type === 'png';
+                            const imgType = isPNG ? 'png' : 'svg';
                             let relX, relY;
                             
-                            // Define reference dimensions for coordinate transformation
-                            // SVG dimensions used as reference (update these if your SVG size changes)
-                            const SVG_WIDTH = 600;  // Reference SVG width
-                            const SVG_HEIGHT = 600; // Reference SVG height
+                            // From your first image, it looks like the floorplan has a corridor at the top
+                            // Reference floorplan dimensions from the original SVG
+                            const REFERENCE_WIDTH = 440;  // Width from your first image
+                            const REFERENCE_HEIGHT = 280; // Height from your first image
                             
-                            // Get actual image dimensions for better scaling
-                            const imgWidth = map.imgWidth || SVG_WIDTH;
-                            const imgHeight = map.imgHeight || SVG_HEIGHT;
+                            // Get actual image dimensions for scaling
+                            const imgWidth = map.imgWidth || REFERENCE_WIDTH;
+                            const imgHeight = map.imgHeight || REFERENCE_HEIGHT;
                             
-                            // Special calibration for specific points
+                            // Based on your first image, all three points are in a row in the top corridor
+                            // According to tour-config.json:
+                            // lcorr1: x=68, y=154
+                            // lcorr2: x=93, y=154
+                            // lcorr3: x=141, y=154
+                            
+                            console.log(`Processing marker for scene ${sceneId} with coords (${svgX}, ${svgY})`);
+                            
+                            // Convert from the coordinates in tour-config.json to relative positions
+                            // Based on your first image
                             if (sceneId === 'lcorr1') {
-                                if (isPNG) {
-                                    // Calibration specific for PNG
-                                    relX = 0.48; 
-                                    relY = 0.40;
-                                } else {
-                                    // SVG calibration
-                                    relX = 0.48;
-                                    relY = 0.40;
-                                }
-                                console.log(`Using calibrated ${isPNG ? 'PNG' : 'SVG'} position for ${sceneId}: (${relX}, ${relY})`);
+                                // Left-most marker in corridor
+                                relX = 68 / REFERENCE_WIDTH;
+                                relY = 154 / REFERENCE_HEIGHT;
+                                console.log(`Using position from tour-config.json for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
                             } else if (sceneId === 'lcorr2') {
-                                if (isPNG) {
-                                    // Calibration specific for PNG
-                                    relX = 0.58;
-                                    relY = 0.40;
-                                } else {
-                                    // SVG calibration
-                                    relX = 0.58;
-                                    relY = 0.40;
-                                }
-                                console.log(`Using calibrated ${isPNG ? 'PNG' : 'SVG'} position for ${sceneId}: (${relX}, ${relY})`);
+                                // Middle marker in corridor
+                                relX = 93 / REFERENCE_WIDTH;
+                                relY = 154 / REFERENCE_HEIGHT;
+                                console.log(`Using position from tour-config.json for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
+                            } else if (sceneId === 'lcorr3') {
+                                // Right-most marker in corridor
+                                relX = 141 / REFERENCE_WIDTH;
+                                relY = 154 / REFERENCE_HEIGHT;
+                                console.log(`Using position from tour-config.json for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)})`);
                             } else {
-                                // For other points, use a calculation based on dimensions
-                                if (isPNG) {
-                                    // Adjust calculation for PNG
-                                    // This assumes SVG coordinates can be mapped directly to PNG with scaling
-                                    relX = svgX / SVG_WIDTH;
-                                    relY = svgY / SVG_HEIGHT;
-                                } else {
-                                    // Standard SVG calculation
-                                    relX = svgX / SVG_WIDTH;
-                                    relY = svgY / SVG_HEIGHT;
-                                }
-                                console.log(`Using calculated position for ${sceneId} (${isPNG ? 'PNG' : 'SVG'}): (${relX}, ${relY}) from coords (${svgX}, ${svgY})`);
+                                // For other points, use a direct calculation
+                                relX = svgX / REFERENCE_WIDTH;
+                                relY = svgY / REFERENCE_HEIGHT;
+                                console.log(`Calculated relative position for ${sceneId}: (${relX.toFixed(3)}, ${relY.toFixed(3)}) from coords (${svgX}, ${svgY})`);
                             }
                             
                             // Create a custom icon for the marker with unique identifier
