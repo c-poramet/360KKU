@@ -42,3 +42,4 @@ dist-ssr
 !analysis.py
 !hotspot_heatmap.png
 !tour_graph.png
+!README.md
